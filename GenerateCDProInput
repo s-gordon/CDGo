@@ -1,0 +1,49 @@
+#!/usr/bin/perl 
+#
+# Generate a CDPro input file.
+# This is called by MakeCDProSuckLess.
+#
+# Data is read from stdin, and should be in the format created by CDToGnuplot (two columns: wavelength	Delta e) 
+# 
+
+    $i = 0;
+    $datalines = "";
+    while(<>) {
+	#if( /^(\d\d\d\.000)\s(-?\d+\.\d+)/ ) {
+	if( /^(\d\d\d\.000)\s(-?\d+\.\d+)/ ) {
+
+	    $lastvalue = sprintf "  %.4f",$1;
+	    if( ! $firstvalue ) {
+		$firstvalue .= $lastvalue;
+	    }
+
+	    $datalines .= sprintf "  %.3f",$2;
+	    $LineEnded=0;
+	    if (++$i % 10 == 0) {
+		$datalines .=  "\r\n"; 
+		$LineEnded=1;
+	    }
+	}
+    }
+    if( !$LineEnded )
+    {
+	$datalines .=  "\r\n";
+    }
+	 	
+    print "#                                                  \r\n";
+    print "# PRINT    IBasis                                  \r\n";
+    print "      1         0\r\n";
+    print "#                                                  \r\n";
+    print "#  ONE Title Line                                  \r\n";
+    print " Title\r\n";
+    print "#                                                  \r\n";
+    print "#     WL_Begin     WL_End       Factor             \r\n";
+    print "    $firstvalue    $lastvalue      1.0000\r\n";
+    print "#                                                  \r\n";
+    print "# CDDATA (Long->Short Wavelength; 260 - 178 LIMITS \r\n";
+
+    print $datalines;
+
+    print "#                                                 \r\n";
+    print "#  IGuess  Str1   Str2   Str3   Str4   Str5    Str6\r\n";
+    print "        0                                          \r\n";
