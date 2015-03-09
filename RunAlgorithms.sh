@@ -2,9 +2,9 @@
 #
 # Call CDPro executables, somewhat more nicely.
 #
-# Before calling this script, convert CD spec output file to Delta epsilon with:
+# Before calling this script, convert CD spec output file to Delta epsilon with: 
 #
-#	``CDToGnuplot -r <# residues> -m <MW (Da)> -c <conc. (mg/ml)> [-b <buffer file>] <InFile   >OutFile''
+# ``CDToGnuplot -r <# residues> -m <MW (Da)> -c <conc. (mg/ml)> [-b <buffer file>] <InFile   >OutFile''
 #
 # Calls ``GenerateCDProInput'' to make the CDPro input file (this would ordinarily have been done by CRDATA.EXE)
 #
@@ -12,9 +12,44 @@
 #    -- At some point i should change this to look in $PATH.
 #
 # Requires perl, gnuplot, wine, CDPro
-#
 
-CDPRO_DIR="/home/sgordon/Downloads/CDPro"
+# ERROR REPORTING ------------------------------------------------------------- {{{
+
+# Taken from <http://www.linuxcommand.org/wss0150.php>
+
+# A slicker error handling routine
+
+# I put a variable in my scripts named PROGNAME which
+# holds the name of the program being run.  You can get this
+# value from the first item on the command line ($0).
+
+PROGNAME=$(basename $0)
+
+function error_exit
+{
+
+# ----------------------------------------------------------------
+# Function for exit due to fatal program error
+#   Accepts 1 argument:
+#     string containing descriptive error message
+# ----------------------------------------------------------------
+  echo "${PROGNAME}: ${1:-"Unknown Error"}" 1>&2
+  exit 1
+}
+
+# Example call of the error_exit function.  Note the inclusion
+# of the LINENO environment variable.  It contains the current
+# line number.
+
+# echo "Example of error with line number and message"
+# error_exit "$LINENO: An error has occurred."
+
+# }}}
+
+CDPRO_DIR="/home/sgordon/.wine/drive_c/Program Files/CDPro"
+if [ ! -d "$CDPRO_DIR" ]; then
+  error_exit "$LINENO: An error has occurred."
+fi
 
 #Set this if you get ``run-detectors: unable to find an interpreter for Continll.exe'' etc
 #WINE=""
@@ -25,81 +60,68 @@ WINE="wine"
 # possibly depending on whether the install was under ~/.wine (ext3/4)
 OUTPUT_CASE=upper
 
-if [ "$OUTPUT_CASE" = "upper" ]
-then
-    CONTINLL_OUT="CONTINLL.OUT"
-    SELCON3_OUT="SELCON3.OUT"
-    CDSSTR_OUT="CDsstr.out"
-elif [ "$OUTPUT_CASE" = "lower" ]
-then
-    CONTINLL_OUT="continll.out"
-    SELCON3_OUT="selcon3.out"
-    CDSSTR_OUT="cdsstr.out"
+if [ "$OUTPUT_CASE" = "upper" ]; then
+  CONTINLL_OUT="CONTINLL.OUT"
+  SELCON3_OUT="SELCON3.OUT"
+  CDSSTR_OUT="CDsstr.out"
+elif [ "$OUTPUT_CASE" = "lower" ]; then
+  CONTINLL_OUT="continll.out"
+  SELCON3_OUT="selcon3.out"
+  CDSSTR_OUT="cdsstr.out"
 else
-    echo "$0: I don't understand OUTPUT_CASE='$OUTPUT_CASE'"
+  echo "$0: i don't understand OUTPUT_CASE='$OUTPUT_CASE'"
 fi
 
-if [ "$#" == "0" ]
+if [ "$#" == "0" ] 
 then
-    echo "Usage: $0 <CDSpec-data-files>"
+  echo "Usage: $0 <CDSpec-data-files>"
 fi
 
-
+# $0 substitutes for the name of the script being executed
 SCRIPT_DIR=`dirname $0`/
 
+GNUPLOT_BASEFILE="$SCRIPT_DIR/basefile_gnuplot.gpi"
+if [ ! -f $GNUPLOT_BASEFILE ]; then
+  error_exit "$LINENO: An error has occurred."
+fi
 
-
-
-
-for DataFile in "$@"
-do
+for DataFile in "$@"; do
   DataDir=`basename "${DataFile}"`-CDPro
   mkdir -p "$DataDir"
-  echo Processing ${DataFile} into $DataDir:
-
-
-  #    echo ${SCRIPT_DIR}GenerateCDProInput
-  #    echo "${SCRIPT_DIR}GenerateCDProInput < "${DataFile}" >| input"
+  echo "Processing ${DataFile} into $DataDir:"
   ${SCRIPT_DIR}GenerateCDProInput < "${DataFile}" >| input
-  #    cat input
-
   cp input "$CDPRO_DIR/"
   cd "$CDPRO_DIR/"
+  pwd
 
-  for i in {1..10};  # (ibasese)
-  do
-    echo -n "ibasis $i ";
+  for i in {1..10}; do  # (ibasese)
+    echo -n "ibasis $i ";  
     perl -pni -e 's/^(\s+\d\s+)\d+()$/${1}'$i'${2}/' input ;
-
-    echo -n "continll"
+    echo -n "continll"   
     echo | $WINE Continll.exe > stdout || echo -n " (crashed)"
-    #	echo
-    #	ls
-    #	echo
     mkdir -p "$OLDPWD/$DataDir/continll-ibasis$i"
-    mv CONTIN.CD CONTIN.OUT $CONTINLL_OUT BASIS.PG ProtSS.out SUMMARY.PG stdout "$OLDPWD/$DataDir/continll-ibasis$i"
-    cp input "$OLDPWD/$DataDir/continll-ibasis$i"
+    mv CONTIN.CD CONTIN.OUT $CONTINLL_OUT BASIS.PG ProtSS.out SUMMARY.PG stdout "$OLDPWD/$DataDir/continll-ibasis$i" 
+    cp input "$OLDPWD/$DataDir/continll-ibasis$i" 
 
     echo -n ", selcon3"
-    echo | $WINE SELCON3.EXE > stdout
-    #	echo
-    #	ls
-    #	echo
+    echo | $WINE SELCON3.EXE > stdout 
     mkdir -p "$OLDPWD/$DataDir/selcon3-ibasis$i"
-    if grep -q 'Program CRASHED -- No SOLUTIONS were Obtained' $SELCON3_OUT
-    then
-      echo -n " (crashed)";
+
+    if grep -q 'Program CRASHED -- No SOLUTIONS were Obtained' $SELCON3_OUT; then
+      echo -n " (crashed)"; 
     else
-      mv ProtSS.out "$OLDPWD/$DataDir/selcon3-ibasis$i"
+      if [ -f ProtSS.out ]; then
+        mv ProtSS.out "$OLDPWD/$DataDir/selcon3-ibasis$i"
+      else
+        echo "${PROGNAME}: ${1:-"Unknown Error"}" 1>&2
+        exit 1
+      fi
     fi
     mv CalcCD.OUT $SELCON3_OUT stdout "$OLDPWD/$DataDir/selcon3-ibasis$i"
     cp input "$OLDPWD/$DataDir/selcon3-ibasis$i"
-
     echo -n , cdsstr
-    echo | $WINE CDSSTR.EXE > stdout || echo -n " (crashed)";
-    #	echo
-    #	ls
-    #	echo
+    echo | $WINE CDSSTR.EXE > stdout || echo -n " (crashed)"; 
+
     mkdir -p "$OLDPWD/$DataDir/cdsstr-ibasis$i"
     mv reconCD.out ProtSS.out $CDSSTR_OUT stdout "$OLDPWD/$DataDir/cdsstr-ibasis$i"
     cp input "$OLDPWD/$DataDir/cdsstr-ibasis$i"
@@ -107,24 +129,21 @@ do
   done
 
   cd "$OLDPWD"
-
-
   cd "$DataDir/"
 
   #
   # What are the best fits ?
   #
-  # This works ok, but doesn't try to resolve situations
+  # This works ok, but doesn't try to resolve situations 
   # where multiple ibasese have the same RMSD.
   #
   plotlines=""
-  for i in continll selcon3 cdsstr
-  do
+  for i in "continll selcon3 cdsstr"; do
     BEST_RMSD_LINE=`/bin/grep -hw RMSD $i-ibasis*/ProtSS.out | sort | head -n1`
     BEST_RMSD=`echo ${BEST_RMSD_LINE##*RMSD(Exp-Calc): }`
     BEST_RMSD=${BEST_RMSD%%?}
 
-    ibasis_filename=`grep -l  "$BEST_RMSD" $i-ibasis*/ProtSS.out|tail -n1` # only return  one
+    ibasis_filename=`grep -l  "$BEST_RMSD" $i-ibasis*/ProtSS.out|tail -n1` # only return  one 
     echo $ibasis_dirname
     ibasis_dirname=`dirname ${ibasis_filename}`
     ibasis=${ibasis_dirname##*-ibasis}
@@ -133,146 +152,49 @@ do
     grep -B1 ^Frac "$ibasis_dirname/stdout"
     grep -l  "$BEST_RMSD" $i-ibasis*/ProtSS.out
 
-    if [ "$i" = "continll" ]
-    then
+    if [ "$i" = "continll" ]; then
       echo $ibasis > best-continll
-      # ln -sf continll-ibasis$ibasis best-continll
-      ContinllPlot=", '$ibasis_dirname/CONTIN.CD' index 0 using 1:3 with lines smooth csplines title \"$i ibasis $ibasis: RMSD=${BEST_RMSD}\""
-    elif [ "$i" = "selcon3" ]
-    then
-      # ln -sf selcon3-ibasis$ibasis best-selcon3
+      ContinllPlot=", '$ibasis_dirname/CONTIN.CD' index 0 using 1:3 w l smooth csplines title \"$i ibasis $ibasis: RMSD=${BEST_RMSD}\""
+    elif [ "$i" = "selcon3" ]; then
       echo $ibasis > best-selcon3
-      Selcon3Plot=", '$ibasis_dirname/CalcCD.OUT' index 0 using 1:3 with lines smooth csplines title \"$i ibasis $ibasis: RMSD=${BEST_RMSD}\""
-    elif  [ "$i" = "cdsstr" ]
-    then
-      #ln -sf cdsstr-ibasis$ibasis best-cdsstr
+      Selcon3Plot=", '$ibasis_dirname/CalcCD.OUT' index 0 using 1:3 w l smooth csplines title \"$i ibasis $ibasis: RMSD=${BEST_RMSD}\"" 
+    elif  [ "$i" = "cdsstr" ]; then
       echo $ibasis > best-cdsstr
-      CdsstrPlot=", '$ibasis_dirname/reconCD.out' index 0 using 1:4 with lines smooth csplines title \"$i ibasis $ibasis: RMSD=${BEST_RMSD}\""
+      CdsstrPlot=", '$ibasis_dirname/reconCD.out' index 0 using 1:4 w l smooth csplines title \"$i ibasis $ibasis: RMSD=${BEST_RMSD}\""
     fi
   done
 
-
-  #Print the gnuplot file:
-  cat <<GPI > "bestFits.gpi"
-  Assay="CDSpec-$DataFile-`date +"%Y%m%d"`-Overlay"
-  DataFile="../$DataFile"
-  OutputType='.pdf'
-
-  set terminal pdfcairo enhanced color font 'Arial,12'
-  set key samplen 2 spacing 0.75
-  set grid xtics ytics mxtics mytics lt -1 lw 0.125 lc rgb "#eeeeee"
-
-  set ylabel "{/Symbol D}{/Symbol e} (M^{-1}{/Symbol \\327} cm^{-1})"
-  set xlabel "Wavelength (nm)"
-  set mxtics 5
-  set mytics 10
-  set key top left
-  # set yrange [-3:1]
-
-  set tics nomirror
-  set border 3 # Remove top and right axes. Bottom: 1, Left: 2, Top: 4, Right: 8
-
-  set title "CD Spec ($DataFile): Absorbance Vs Wavelength"
-  set output Assay.OutputType
-
-
-  plot DataFile index 0 using 1:2 w p pt 7 ps 0.4 lc rgb "black" title "" $ContinllPlot $Selcon3Plot $CdsstrPlot
-
-  GPI
-
-  gnuplot bestFits.gpi
-
+  # Print the gnuplot file:
+  gnuplot -e "Assay=\"CDSpec-$DataFile-`date +\"%Y%m%d\"`-Overlay\"" \
+          -e "DataFile=\"../$DataFile\"" \
+          -e "set title \"CD Spec ($DataFile): Absorbance Vs Wavelength\"" \
+          $GNUPLOT_BASEFILE \
+          -e "plot DataFile index 0 using 1:2 w p pt 7 ps 0.4 lc rgb \"black\" notitle $ContinllPlot $Selcon3Plot $CdsstrPlot" \
 
 
   #Print the best-continll file:
-  cat <<GPI > "bestContinllFit.gpi"
-  Assay="CDSpec-$DataFile-`date +"%Y%m%d"`-bestContinll"
-  DataFile="../$DataFile"
-  OutputType='.pdf'
-
-  set terminal pdfcairo enhanced color font 'Arial,12'
-  set key samplen 2 spacing 0.75
-  set grid xtics ytics mxtics  mytics lt -1 lw 0.125 lc rgb "#eeeeee"
-
-  set ylabel "{/Symbol D}{/Symbol e} (M^{-1}{/Symbol \\327} cm^{-1})"
-  set xlabel "Wavelength (nm)"
-  set mxtics 5
-  set mytics 10
-  set key top left
-  # set yrange [-3:1]
-
-  set tics nomirror
-  set border 3 # Remove top and right axes. Bottom: 1, Left: 2, Top: 4, Right: 8
-
-  set title "CD Spec ($DataFile): Absorbance Vs Wavelength"
-  set output Assay.OutputType
-
-
-  plot DataFile index 0 using 1:2 title ""  $ContinllPlot
-  GPI
-
-  gnuplot bestContinllFit.gpi
+  gnuplot -e "Assay=\"CDSpec-$DataFile-`date +\"%Y%m%d\"`-bestContinll\"" \
+          -e "DataFile=\"../$DataFile\"" \
+          -e "set title \"CD Spec ($DataFile): Absorbance Vs Wavelength\"" \
+          $GNUPLOT_BASEFILE \
+          -e "plot DataFile index 0 using 1:2 notitle $ContinllPlot"
 
 
   #Print the best-Selcon3 file:
-  cat <<GPI > "bestSelcon3Fit.gpi"
-  Assay="CDSpec-$DataFile-`date +"%Y%m%d"`-bestSelcon3"
-  DataFile="../$DataFile"
-  OutputType='.pdf'
-
-  set terminal pdfcairo enhanced color font 'Arial,12'
-  set key samplen 2 spacing 0.75
-  set grid xtics ytics mxtics  mytics lt -1 lw 0.125 lc rgb "#eeeeee"
-
-  set ylabel "{/Symbol D}{/Symbol e} (M^{-1}{/Symbol \\327} cm^{-1})"
-  set xlabel "Wavelength (nm)"
-  set mxtics 5
-  set mytics 10
-  set key top left
-  # set yrange [-3:1]
-
-  set tics nomirror
-  set border 3 # Remove top and right axes. Bottom: 1, Left: 2, Top: 4, Right: 8
-
-  set title "CD Spec ($DataFile): Absorbance Vs Wavelength"
-  set output Assay.OutputType
-
-
-  plot DataFile index 0 using 1:2 title ""  $Selcon3Plot
-  GPI
-
-  gnuplot bestSelcon3Fit.gpi
+  gnuplot -e "Assay=\"CDSpec-$DataFile-`date +\"%Y%m%d\"`-bestSelcon3\"" \
+          -e "DataFile=\"../$DataFile\"" \
+          -e "set title \"CD Spec ($DataFile): Absorbance Vs Wavelength\"" \
+          $GNUPLOT_BASEFILE \
+          -e "plot DataFile index 0 using 1:2 notitle $Selcon3Plot"
 
 
   #Print the best-CdsstrPlot file:
-  cat <<GPI > "bestCdsstrPlotFit.gpi"
-  Assay="CDSpec-$DataFile-`date +"%Y%m%d"`-bestCdsstrPlot"
-  DataFile="../$DataFile"
-  OutputType='.pdf'
-
-  set terminal pdfcairo enhanced color font 'Arial,12'
-  set key samplen 2 spacing 0.75
-  set grid xtics ytics mxtics  mytics lt -1 lw 0.125 lc rgb "#eeeeee"
-
-  set ylabel "{/Symbol D}{/Symbol e} (M^{-1}{/Symbol \\327} cm^{-1})"
-  set xlabel "Wavelength (nm)"
-  set mxtics 5
-  set mytics 10
-  set key top left
-  # set yrange [-3:1]
-
-  set tics nomirror
-  set border 3 # Remove top and right axes. Bottom: 1, Left: 2, Top: 4, Right: 8
-
-  set title "CD Spec ($DataFile): Absorbance Vs Wavelength"
-  set output Assay.OutputType
-
-
-  plot DataFile index 0 using 1:2 title ""  $CdsstrPlot
-  GPI
-
-  gnuplot bestCdsstrPlotFit.gpi
-
-  cd ..
+  gnuplot -e "Assay=\"CDSpec-$DataFile-`date +\"%Y%m%d\"`-bestCdsstrPlot\"" \
+          -e "DataFile=\"../$DataFile\"" \
+          -e "set title \"CD Spec ($DataFile): Absorbance Vs Wavelength\"" \
+          -e "plot DataFile index 0 using 1:2 notitle $CdsstrPlot" \
+          $GNUPLOT_BASEFILE \
+          -e "plot DataFile index 0 using 1:2 notitle $CdsstrPlot"
+    cd ..
 
 done
