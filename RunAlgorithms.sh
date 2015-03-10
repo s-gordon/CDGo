@@ -138,7 +138,7 @@ for DataFile in "$@"; do
   # where multiple ibasese have the same RMSD.
   #
   plotlines=""
-  for i in "continll selcon3 cdsstr"; do
+  for i in continll selcon3 cdsstr; do
     BEST_RMSD_LINE=`/bin/grep -hw RMSD $i-ibasis*/ProtSS.out | sort | head -n1`
     BEST_RMSD=`echo ${BEST_RMSD_LINE##*RMSD(Exp-Calc): }`
     BEST_RMSD=${BEST_RMSD%%?}
@@ -171,14 +171,12 @@ for DataFile in "$@"; do
           $GNUPLOT_BASEFILE \
           -e "plot DataFile index 0 using 1:2 w p pt 7 ps 0.4 lc rgb \"black\" notitle $ContinllPlot $Selcon3Plot $CdsstrPlot" \
 
-
   #Print the best-continll file:
   gnuplot -e "Assay=\"CDSpec-$DataFile-`date +\"%Y%m%d\"`-bestContinll\"" \
           -e "DataFile=\"../$DataFile\"" \
           -e "set title \"CD Spec ($DataFile): Absorbance Vs Wavelength\"" \
           $GNUPLOT_BASEFILE \
           -e "plot DataFile index 0 using 1:2 notitle $ContinllPlot"
-
 
   #Print the best-Selcon3 file:
   gnuplot -e "Assay=\"CDSpec-$DataFile-`date +\"%Y%m%d\"`-bestSelcon3\"" \
@@ -187,12 +185,10 @@ for DataFile in "$@"; do
           $GNUPLOT_BASEFILE \
           -e "plot DataFile index 0 using 1:2 notitle $Selcon3Plot"
 
-
   #Print the best-CdsstrPlot file:
   gnuplot -e "Assay=\"CDSpec-$DataFile-`date +\"%Y%m%d\"`-bestCdsstrPlot\"" \
           -e "DataFile=\"../$DataFile\"" \
           -e "set title \"CD Spec ($DataFile): Absorbance Vs Wavelength\"" \
-          -e "plot DataFile index 0 using 1:2 notitle $CdsstrPlot" \
           $GNUPLOT_BASEFILE \
           -e "plot DataFile index 0 using 1:2 notitle $CdsstrPlot"
     cd ..
