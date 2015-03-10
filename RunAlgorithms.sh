@@ -44,12 +44,24 @@ function error_exit
 # echo "Example of error with line number and message"
 # error_exit "$LINENO: An error has occurred."
 
+function check_dir_exists
+{
+  if [ ! -d "$1" ]; then
+    error_exit "$LINENO: An error has occurred. Directory $1 not found."
+  fi
+}
+
+function check_file_exists
+{
+  if [ ! -d "$1" ]; then
+    error_exit "$LINENO: An error has occurred. File $1 not found."
+  fi
+}
+
 # }}}
 
 CDPRO_DIR="/home/sgordon/.wine/drive_c/Program Files/CDPro"
-if [ ! -d "$CDPRO_DIR" ]; then
-  error_exit "$LINENO: An error has occurred."
-fi
+check_dir_exists "$CDPRO_DIR"
 
 #Set this if you get ``run-detectors: unable to find an interpreter for Continll.exe'' etc
 #WINE=""
@@ -81,9 +93,7 @@ fi
 SCRIPT_DIR=`dirname $0`/
 
 GNUPLOT_BASEFILE="$SCRIPT_DIR/basefile_gnuplot.gpi"
-if [ ! -f $GNUPLOT_BASEFILE ]; then
-  error_exit "$LINENO: An error has occurred."
-fi
+check_file_exists $GNUPLOT_BASEFILE
 
 for DataFile in "$@"; do
   DataDir=`basename "${DataFile}"`-CDPro
