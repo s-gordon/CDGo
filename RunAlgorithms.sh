@@ -53,14 +53,14 @@ function check_dir_exists
 
 function check_file_exists
 {
-  if [ ! -d "$1" ]; then
+  if [ ! -f "$1" ]; then
     error_exit "$LINENO: An error has occurred. File $1 not found."
   fi
 }
 
 # }}}
 
-CDPRO_DIR="/home/sgordon/.wine/drive_c/Program Files/CDPro"
+CDPRO_DIR="/Users/sgordon/.wine/drive_c/Program Files/CDPro"
 check_dir_exists "$CDPRO_DIR"
 
 #Set this if you get ``run-detectors: unable to find an interpreter for Continll.exe'' etc
@@ -90,7 +90,8 @@ then
 fi
 
 # $0 substitutes for the name of the script being executed
-SCRIPT_DIR=`dirname $0`/
+SCRIPT_DIR=`dirname $0`
+check_dir_exists $SCRIPT_DIR
 
 GNUPLOT_BASEFILE="$SCRIPT_DIR/basefile_gnuplot.gpi"
 check_file_exists $GNUPLOT_BASEFILE
@@ -99,7 +100,7 @@ for DataFile in "$@"; do
   DataDir=`basename "${DataFile}"`-CDPro
   mkdir -p "$DataDir"
   echo "Processing ${DataFile} into $DataDir:"
-  ${SCRIPT_DIR}GenerateCDProInput < "${DataFile}" >| input
+  ${SCRIPT_DIR}/GenerateCDProInput < "${DataFile}" >| input
   cp input "$CDPRO_DIR/"
   cd "$CDPRO_DIR/"
   pwd
@@ -149,7 +150,7 @@ for DataFile in "$@"; do
   #
   plotlines=""
   for i in continll selcon3 cdsstr; do
-    BEST_RMSD_LINE=`/bin/grep -hw RMSD $i-ibasis*/ProtSS.out | sort | head -n1`
+    BEST_RMSD_LINE=`grep -hw RMSD $i-ibasis*/ProtSS.out | sort | head -n1`
     BEST_RMSD=`echo ${BEST_RMSD_LINE##*RMSD(Exp-Calc): }`
     BEST_RMSD=${BEST_RMSD%%?}
 
