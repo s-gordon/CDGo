@@ -3,7 +3,7 @@
 # FILE:     RunAlgorithms.py
 # ROLE:     TODO (some explanation)
 # CREATED:  2015-06-06 13:12:10
-# MODIFIED: 2015-06-08 01:12:15
+# MODIFIED: 2015-06-08 09:45:37
 
 import os
 import sys
@@ -106,13 +106,14 @@ for ibasis in range(1,11):
 
 os.chdir(cdpro_out_dir)
 for algorithm in ["continll", "cdsstr"]:
-    best_rmsd_line = subprocess.check_output('echo `grep -hw RMSD %s-ibasis*/ProtSS.out | sort | head -n1`' % (algorithm),shell=True)
+    best_rmsd_line = subprocess.check_output('grep -hw RMSD %s-ibasis*/ProtSS.out | sort | head -n1' % (algorithm),shell=True)
+    # best_rmsd_line = subprocess.check_output('echo `grep -hw RMSD %s-ibasis*/ProtSS.out | sort | head -n1`' % (algorithm),shell=True)
     best_rmsd = best_rmsd_line[16:20]
     ibasis_f = subprocess.check_output('grep -l "%s" %s-ibasis*/ProtSS.out|tail -n1' % (best_rmsd, algorithm), shell=True)
     logging.info('Best %s RMSD: %s' % (algorithm, ibasis_f))
     ibasis_dir = os.path.dirname(os.path.realpath(ibasis_f))
     best_ibasis = ibasis_dir[-1]
-    logging.info('Best ibasis for %s is ibasis%s' % (algorithm, best_ibasis))
+    logging.info('Best ibasis for %s: %s' % (algorithm, best_rmsd))
 
     if algorithm == "continll":
         subprocess.call('echo %s > best-%s' % (best_ibasis, algorithm), shell=True)
@@ -120,7 +121,7 @@ for algorithm in ["continll", "cdsstr"]:
         subprocess.call('gnuplot -e "Assay=\'CDSpec-%s-%s-bestContinll\'" -e "DataFile=\'../%s\'" -e "set title \'CD Spec (%s): Absorbance Vs Wavelength\'" "%s" -e \"plot DataFile index 0 using 1:2 w p pt 7 ps 0.4 lc rgb \'black\' notitle, %s\"' % (result.cdpro_input, time.strftime("%Y%m%d"), result.cdpro_input, result.cdpro_input, gnuplot_basefile, continll_plot_cmd), shell=True)
     elif algorithm == "cdsstr":
         subprocess.call('echo %s > best-%s' % (best_ibasis, algorithm), shell=True)
-        cdsstr_plot_cmd = "\'%s/reconCD.out\' index 0 using 1:3 w l smooth csplines title \'%s ibasis %s: RMSD=%s\'" % (ibasis_dir, algorithm, best_ibasis, best_rmsd)
+        cdsstr_plot_cmd = "\'%s/reconCD.out\' index 0 using 1:3 w l smooth csplines title \'%s ibasis %s: RMSD= %s\'" % (ibasis_dir, algorithm, best_ibasis, best_rmsd)
         subprocess.call('gnuplot -e "Assay=\'CDSpec-%s-%s-bestCDsstr\'" -e "DataFile=\'../%s\'" -e "set title \'CD Spec (%s): Absorbance Vs Wavelength\'" "%s"  -e "plot DataFile index 0 using 1:2 w p pt 7 ps 0.4 lc rgb \'black\' notitle, %s"' % (result.cdpro_input, time.strftime("%Y%m%d"), result.cdpro_input, result.cdpro_input, gnuplot_basefile, cdsstr_plot_cmd), shell=True)
 
 # Print the gnuplot overlay
