@@ -3,7 +3,7 @@
 # FILE:     RunAlgorithms.py
 # ROLE:     TODO (some explanation)
 # CREATED:  2015-06-06 13:12:10
-# MODIFIED: 2015-06-08 14:28:54
+# MODIFIED: 2015-06-08 23:24:39
 
 import os
 import sys
@@ -110,12 +110,12 @@ os.chdir(cdpro_out_dir)
 for algorithm in ["continll", "cdsstr"]:
     best_rmsd_line = subprocess.check_output('grep -hw RMSD %s-ibasis*/ProtSS.out | sort | head -n1' % (algorithm),shell=True)
     # best_rmsd_line = subprocess.check_output('echo `grep -hw RMSD %s-ibasis*/ProtSS.out | sort | head -n1`' % (algorithm),shell=True)
-    best_rmsd = best_rmsd_line[20:23]
+    best_rmsd = best_rmsd_line[20:24]
     ibasis_f = subprocess.check_output('grep -l "%s" %s-ibasis*/ProtSS.out|tail -n1' % (best_rmsd, algorithm), shell=True)
-    logging.info('Best %s RMSD: %s' % (algorithm, ibasis_f))
+    logging.info('Best %s RMSD: %s' % (algorithm, best_rmsd))
     ibasis_dir = os.path.dirname(os.path.realpath(ibasis_f))
     best_ibasis = ibasis_dir[-1]
-    logging.info('Best ibasis for %s: %s' % (algorithm, best_rmsd))
+    logging.info('Best ibasis for %s: %s' % (algorithm, ibasis_f,))
 
     if algorithm == "continll":
         subprocess.call('echo %s > best-%s' % (best_ibasis, algorithm), shell=True)
