@@ -3,7 +3,7 @@
 # FILE:     RunAlgorithms.py
 # ROLE:     TODO (some explanation)
 # CREATED:  2015-06-06 13:12:10
-# MODIFIED: 2015-06-08 09:45:37
+# MODIFIED: 2015-06-08 14:28:54
 
 import os
 import sys
@@ -82,11 +82,13 @@ cdpro_out_dir = "%s/%s-CDPro" % (base_dir, result.cdpro_input)
 delete_dir(cdpro_out_dir)
 logging.info('Processing %s into %s' % (result.cdpro_input, cdpro_out_dir))
 subprocess.call(['%s/GenerateCDProInput < "%s" >| input' % (script_dir, result.cdpro_input)], shell=True)
-shutil.copy("input", "%s/input" % (script_dir))
+shutil.copy("input", "%s/input" % (result.cdpro_dir))
 os.chdir(result.cdpro_dir)
 for ibasis in range(1,11):
     logging.info('ibasis %s', ibasis)
-    subprocess.call(["perl -pni -e 's/^(\s+\d\s+)\d+(^M)$/${1}'%s'${2}/' input" % (ibasis)], shell=True)
+    subprocess.call(["sed -i '/PRINT/!b;n;c\      0\\t\\t%s' input && tr -d '^M' < input >> temp_input && mv temp_input input" % (ibasis)], shell=True)
+    # subprocess.call(["perl -pni -e 's/^(\s+\d\s+)\d+(^M)$/${1}'%s'${2}/' input" % (ibasis)], shell=True)
+    # print("perl -pni -e 's/^(\s+\d\s+)\d+(^M)$/${1}'%s'${2}/' input" % (ibasis))
     logging.info('Running CONTINLL')
     subprocess.call(['echo | wine Continll.exe > stdout || echo -n " (crashed)"'], shell=True)
     continll_outdir = ('%s/continll-ibasis%s' % (cdpro_out_dir, ibasis))
@@ -108,7 +110,7 @@ os.chdir(cdpro_out_dir)
 for algorithm in ["continll", "cdsstr"]:
     best_rmsd_line = subprocess.check_output('grep -hw RMSD %s-ibasis*/ProtSS.out | sort | head -n1' % (algorithm),shell=True)
     # best_rmsd_line = subprocess.check_output('echo `grep -hw RMSD %s-ibasis*/ProtSS.out | sort | head -n1`' % (algorithm),shell=True)
-    best_rmsd = best_rmsd_line[16:20]
+    best_rmsd = best_rmsd_line[20:23]
     ibasis_f = subprocess.check_output('grep -l "%s" %s-ibasis*/ProtSS.out|tail -n1' % (best_rmsd, algorithm), shell=True)
     logging.info('Best %s RMSD: %s' % (algorithm, ibasis_f))
     ibasis_dir = os.path.dirname(os.path.realpath(ibasis_f))
