@@ -3,7 +3,7 @@
 # FILE:     RunAlgorithms.py
 # ROLE:     TODO (some explanation)
 # CREATED:  2015-06-06 13:12:10
-# MODIFIED: 2015-06-08 23:24:39
+# MODIFIED: 2015-06-10 19:58:48
 
 import os
 import sys
@@ -46,6 +46,10 @@ def check_dir(dir):
         sys.exit()
 
 def delete_dir(dir):
+    """
+    Check whether directory dir exists.
+    If true delete and remake.
+    """
     if os.path.exists(dir):
         shutil.rmtree(dir)
     os.makedirs(dir)
@@ -80,16 +84,14 @@ gnuplot_basefile = "%s/basefile_gnuplot.gpi" % (script_dir)
 
 cdpro_out_dir = "%s/%s-CDPro" % (base_dir, result.cdpro_input)
 delete_dir(cdpro_out_dir)
-logging.info('Processing %s into %s' % (result.cdpro_input, cdpro_out_dir))
+logging.debug('Processing %s into %s' % (result.cdpro_input, cdpro_out_dir))
 subprocess.call(['%s/GenerateCDProInput < "%s" >| input' % (script_dir, result.cdpro_input)], shell=True)
 shutil.copy("input", "%s/input" % (result.cdpro_dir))
 os.chdir(result.cdpro_dir)
 for ibasis in range(1,11):
     logging.info('ibasis %s', ibasis)
     subprocess.call(["sed -i '/PRINT/!b;n;c\      0\\t\\t%s' input && tr -d '^M' < input >> temp_input && mv temp_input input" % (ibasis)], shell=True)
-    # subprocess.call(["perl -pni -e 's/^(\s+\d\s+)\d+(^M)$/${1}'%s'${2}/' input" % (ibasis)], shell=True)
-    # print("perl -pni -e 's/^(\s+\d\s+)\d+(^M)$/${1}'%s'${2}/' input" % (ibasis))
-    logging.info('Running CONTINLL')
+    logging.debug('Running CONTINLL')
     subprocess.call(['echo | wine Continll.exe > stdout || echo -n " (crashed)"'], shell=True)
     continll_outdir = ('%s/continll-ibasis%s' % (cdpro_out_dir, ibasis))
     make_dir(continll_outdir)
@@ -97,7 +99,7 @@ for ibasis in range(1,11):
         shutil.move(f, "%s/" % (continll_outdir))
     if os.path.isfile("input"):
         shutil.copy("input", "%s/" % (continll_outdir))
-    logging.info('Running CDSSTR')
+    logging.debug('Running CDSSTR')
     subprocess.call(['echo | wine CDSSTR.EXE > stdout || echo -n " (crashed)"'], shell=True)
     cdsstr_outdir = ('%s/cdsstr-ibasis%s' % (cdpro_out_dir, ibasis))
     make_dir(cdsstr_outdir)
@@ -108,8 +110,7 @@ for ibasis in range(1,11):
 
 os.chdir(cdpro_out_dir)
 for algorithm in ["continll", "cdsstr"]:
-    best_rmsd_line = subprocess.check_output('grep -hw RMSD %s-ibasis*/ProtSS.out | sort | head -n1' % (algorithm),shell=True)
-    # best_rmsd_line = subprocess.check_output('echo `grep -hw RMSD %s-ibasis*/ProtSS.out | sort | head -n1`' % (algorithm),shell=True)
+    best_rmsd_line = subprocess.check_output('grep', '-hw RMSD %s-ibasis*/ProtSS.out | sort | head -n1' % (algorithm),shell=True)
     best_rmsd = best_rmsd_line[20:24]
     ibasis_f = subprocess.check_output('grep -l "%s" %s-ibasis*/ProtSS.out|tail -n1' % (best_rmsd, algorithm), shell=True)
     logging.info('Best %s RMSD: %s' % (algorithm, best_rmsd))
@@ -127,6 +128,6 @@ for algorithm in ["continll", "cdsstr"]:
         subprocess.call('gnuplot -e "Assay=\'CDSpec-%s-%s-bestCDsstr\'" -e "DataFile=\'../%s\'" -e "set title \'CD Spec (%s): Absorbance Vs Wavelength\'" "%s"  -e "plot DataFile index 0 using 1:2 w p pt 7 ps 0.4 lc rgb \'black\' notitle, %s"' % (result.cdpro_input, time.strftime("%Y%m%d"), result.cdpro_input, result.cdpro_input, gnuplot_basefile, cdsstr_plot_cmd), shell=True)
 
 # Print the gnuplot overlay
-logging.info('Plotting fit overlays')
+logging.debug('Plotting fit overlays')
 subprocess.call('gnuplot -e "Assay=\'CDSpec-%s-%s-Overlay\'" -e "DataFile=\'../%s\'" -e "set title \'CD Spec (%s): Absorbance Vs Wavelength\'" "%s"  -e "plot DataFile index 0 using 1:2 w p pt 7 ps 0.4 lc rgb \'black\' notitle, %s, %s"' % (result.cdpro_input, time.strftime("%Y%m%d"), result.cdpro_input, result.cdpro_input, gnuplot_basefile, continll_plot_cmd, cdsstr_plot_cmd), shell=True)
 
