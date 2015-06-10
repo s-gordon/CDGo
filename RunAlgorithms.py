@@ -3,7 +3,7 @@
 # FILE:     RunAlgorithms.py
 # ROLE:     TODO (some explanation)
 # CREATED:  2015-06-06 13:12:10
-# MODIFIED: 2015-06-10 20:34:13
+# MODIFIED: 2015-06-10 22:38:07
 
 import os
 import sys
@@ -46,7 +46,7 @@ else:
 def check_dir(dir):
     """
     Check whether directory dir exists.
-    If true. continue. Else exit.
+    If true continue. Else exit.
     """
     if not os.path.isdir(dir):
         logging.error('Path %s not found', dir)
