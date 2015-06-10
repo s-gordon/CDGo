@@ -3,11 +3,7 @@
 # FILE:     RunAlgorithms.py
 # ROLE:     TODO (some explanation)
 # CREATED:  2015-06-06 13:12:10
-<<<<<<< HEAD
-# MODIFIED: 2015-06-10 19:58:48
-=======
-# MODIFIED: 2015-06-10 16:54:30
->>>>>>> 475016a0087cd1723d7690b3da80113f69b784af
+# MODIFIED: 2015-06-10 20:34:13
 
 import os
 import sys
@@ -16,9 +12,7 @@ import argparse
 import subprocess
 import shutil
 import time
-
-# Logging
-logging.basicConfig(format='%(levelname)s:\t%(message)s', level=logging.DEBUG)
+import shlex
 
 # Argparse
 class MyParser(argparse.ArgumentParser):
@@ -27,17 +21,27 @@ class MyParser(argparse.ArgumentParser):
         self.print_help()
         sys.exit(2)
 
-
 parser=MyParser(description='Run CDPro automatically.',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-parser.add_argument('-C', action="store", dest="cdpro_dir", 
-        default="/Users/sgordon/.wine/drive_c/Program Files/CDPro", 
+parser.add_argument('-C', action="store", dest="cdpro_dir",
+        default="/Users/sgordon/.wine/drive_c/Program Files/CDPro",
         help="CDPro executable directory")
-parser.add_argument('-i', action="store", dest="cdpro_input", 
+parser.add_argument('-i', action="store", dest="cdpro_input",
         required=True, help="CDPro executable directory")
+parser.add_argument('-v', '--verbose',  action="store_true",
+        help="Increase verbosity")
 
 result = parser.parse_args()
+
+"""
+If verbosity set, change logging to debug.
+Else leave at info
+"""
+if result.verbose:
+    logging.basicConfig(format='%(levelname)s:\t%(message)s', level=logging.DEBUG)
+else:
+    logging.basicConfig(format='%(levelname)s:\t%(message)s', level=logging.INFO)
 
 def check_dir(dir):
     """
@@ -60,7 +64,7 @@ def delete_dir(dir):
 
 def check_cmd(cmd):
     try:
-        subprocess.check_call(['%s' % cmd])
+        subprocess.check_call(['%s' % cmd], shell=True)
     except subprocess.CalledProcessError:
         pass # handle errors in the called executable
     except OSError:
@@ -74,7 +78,7 @@ def make_dir(dir):
 cmds = ["wine"]
 
 for command in cmds:
-	check_cmd(command)
+    check_cmd(command)
 
 check_dir(result.cdpro_dir)
 
@@ -93,7 +97,6 @@ subprocess.call(['%s/GenerateCDProInput < "%s" >| input' % (script_dir, result.c
 shutil.copy("input", "%s/input" % (result.cdpro_dir))
 os.chdir(result.cdpro_dir)
 for ibasis in range(1,11):
-<<<<<<< HEAD
     logging.info('ibasis %s', ibasis)
     subprocess.call(["sed -i '/PRINT/!b;n;c\      0\\t\\t%s' input && tr -d '^M' < input >> temp_input && mv temp_input input" % (ibasis)], shell=True)
     logging.debug('Running CONTINLL')
@@ -112,54 +115,27 @@ for ibasis in range(1,11):
         shutil.move(f, "%s/" % (cdsstr_outdir))
     if os.path.isfile("input"):
         shutil.copy("input", "%s/" % (cdsstr_outdir))
+    logging.debug('Running SELCON')
+    subprocess.call(['echo | wine SELCON3.EXE > stdout'], shell=True)
 
-os.chdir(cdpro_out_dir)
-for algorithm in ["continll", "cdsstr"]:
-    best_rmsd_line = subprocess.check_output('grep', '-hw RMSD %s-ibasis*/ProtSS.out | sort | head -n1' % (algorithm),shell=True)
-=======
-	logging.info('ibasis %s', ibasis)
-	subprocess.call(["sed -i '/PRINT/!b;n;c\      0\\t\\t%s' input && tr -d '^M' < input >> temp_input && mv temp_input input" % (ibasis)], shell=True)
-	# subprocess.call(["perl -pni -e 's/^(\s+\d\s+)\d+(^M)$/${1}'%s'${2}/' input" % (ibasis)], shell=True)
-	# print("perl -pni -e 's/^(\s+\d\s+)\d+(^M)$/${1}'%s'${2}/' input" % (ibasis))
-	logging.info('Running CONTINLL')
-	subprocess.call(['echo | wine Continll.exe > stdout || echo -n " (crashed)"'], shell=True)
-	continll_outdir = ('%s/continll-ibasis%s' % (cdpro_out_dir, ibasis))
-	make_dir(continll_outdir)
-	for f in ["CONTIN.CD", "CONTIN.OUT", "%s" % (continll_out), "BASIS.PG", "ProtSS.out", "SUMMARY.PG", "stdout"]:
-		shutil.move(f, "%s/" % (continll_outdir))
-	if os.path.isfile("input"):
-		shutil.copy("input", "%s/" % (continll_outdir))
-	logging.info('Running CDSSTR')
-	subprocess.call(['echo | wine CDSSTR.EXE > stdout || echo -n " (crashed)"'], shell=True)
-	cdsstr_outdir = ('%s/cdsstr-ibasis%s' % (cdpro_out_dir, ibasis))
-	make_dir(cdsstr_outdir)
-	for f in ["reconCD.out", "ProtSS.out", "%s" % (cdsstr_out), "stdout"]:
-		shutil.move(f, "%s/" % (cdsstr_outdir))
-	if os.path.isfile("input"):
-		shutil.copy("input", "%s/" % (cdsstr_outdir))
-	logging.info('Running SELCON')
-	subprocess.call(['echo | wine SELCON3.EXE > stdout'], shell=True)
-	
-	selcon3_outdir = ('%s/selcon3-ibasis%s' % (cdpro_out_dir, ibasis))
-	selcon_quality = 1
-	with open('%s' % (selcon3_out)) as fp:
-		for line in fp:
-			if line.find('Program CRASHED -- No SOLUTIONS were Obtained') == 1:
-				logging.error('SELCON3 crashed')
-				selcon_quality = 0
+    selcon3_outdir = ('%s/selcon3-ibasis%s' % (cdpro_out_dir, ibasis))
+    selcon_quality = 1
+    with open('%s' % (selcon3_out)) as fp:
+        for line in fp:
+            if line.find('Program CRASHED -- No SOLUTIONS were Obtained') == 1:
+                logging.error('SELCON3 crashed')
+                selcon_quality = 0
 
-	if selcon_quality != 0:
-		make_dir(selcon3_outdir)
-		for f in ["CalcCD.OUT", "ProtSS.out", "%s" % (selcon3_out), "stdout"]:
-			shutil.move(f, "%s/" % (selcon3_outdir))
-		if os.path.isfile("input"):
-			shutil.copy("input", "%s/" % (selcon3_outdir))
+    if selcon_quality != 0:
+        make_dir(selcon3_outdir)
+        for f in ["CalcCD.OUT", "ProtSS.out", "%s" % (selcon3_out), "stdout"]:
+            shutil.move(f, "%s/" % (selcon3_outdir))
+            if os.path.isfile("input"):
+                shutil.copy("input", "%s/" % (selcon3_outdir))
 
 os.chdir(cdpro_out_dir)
 for algorithm in ["continll", "cdsstr", "selcon3"]:
     best_rmsd_line = subprocess.check_output('grep -hw RMSD %s-ibasis*/ProtSS.out | sort | head -n1' % (algorithm),shell=True)
-    # best_rmsd_line = subprocess.check_output('echo `grep -hw RMSD %s-ibasis*/ProtSS.out | sort | head -n1`' % (algorithm),shell=True)
->>>>>>> 475016a0087cd1723d7690b3da80113f69b784af
     best_rmsd = best_rmsd_line[20:24]
     ibasis_f = subprocess.check_output('grep -l "%s" %s-ibasis*/ProtSS.out|tail -n1' % (best_rmsd, algorithm), shell=True)
     logging.info('Best %s RMSD: %s' % (algorithm, best_rmsd))
@@ -171,7 +147,6 @@ for algorithm in ["continll", "cdsstr", "selcon3"]:
         subprocess.call('echo %s > best-%s' % (best_ibasis, algorithm), shell=True)
         continll_plot_cmd = "\'%s/CONTIN.CD\' index 0 using 1:3 w l smooth csplines title \'%s ibasis %s: RMSD=%s\'" % (ibasis_dir, algorithm, best_ibasis, best_rmsd)
         subprocess.call('gnuplot -e "Assay=\'CDSpec-%s-%s-bestContinll\'" -e "DataFile=\'../%s\'" -e "set title \'CD Spec (%s): Absorbance Vs Wavelength\'" "%s"  -e "plot DataFile index 0 using 1:2 w p pt 7 ps 0.4 lc rgb \'black\' notitle, %s"' % (result.cdpro_input, time.strftime("%Y%m%d"), result.cdpro_input, result.cdpro_input, gnuplot_basefile, continll_plot_cmd), shell=True)
-        # subprocess.call('gnuplot -e "Assay=\'CDSpec-%s-%s-bestContinll\'" -e "DataFile=\'../%s\'" -e "set title \'CD Spec (%s): Absorbance Vs Wavelength\'" "%s" -e "\"plot DataFile index 0 using 1:2 w p pt 7 ps 0.4 lc rgb \'black\' notitle, %s"' % (result.cdpro_input, time.strftime("%Y%m%d"), result.cdpro_input, result.cdpro_input, gnuplot_basefile, continll_plot_cmd))
     elif algorithm == "cdsstr":
         subprocess.call('echo %s > best-%s' % (best_ibasis, algorithm), shell=True)
         cdsstr_plot_cmd = "\'%s/reconCD.out\' index 0 using 1:3 w l smooth csplines title \'%s ibasis %s: RMSD= %s\'" % (ibasis_dir, algorithm, best_ibasis, best_rmsd)
@@ -182,11 +157,6 @@ for algorithm in ["continll", "cdsstr", "selcon3"]:
         subprocess.call('gnuplot -e "Assay=\'CDSpec-%s-%s-bestSelcon3\'" -e "DataFile=\'../%s\'" -e "set title \'CD Spec (%s): Absorbance Vs Wavelength\'" "%s"  -e "plot DataFile index 0 using 1:2 w p pt 7 ps 0.4 lc rgb \'black\' notitle, %s"' % (result.cdpro_input, time.strftime("%Y%m%d"), result.cdpro_input, result.cdpro_input, gnuplot_basefile, selcon3_plot_cmd), shell=True)
 
 # Print the gnuplot overlay
-<<<<<<< HEAD
 logging.debug('Plotting fit overlays')
-subprocess.call('gnuplot -e "Assay=\'CDSpec-%s-%s-Overlay\'" -e "DataFile=\'../%s\'" -e "set title \'CD Spec (%s): Absorbance Vs Wavelength\'" "%s"  -e "plot DataFile index 0 using 1:2 w p pt 7 ps 0.4 lc rgb \'black\' notitle, %s, %s"' % (result.cdpro_input, time.strftime("%Y%m%d"), result.cdpro_input, result.cdpro_input, gnuplot_basefile, continll_plot_cmd, cdsstr_plot_cmd), shell=True)
-=======
-logging.info('Plotting fit overlays')
 subprocess.call('gnuplot -e "Assay=\'CDSpec-%s-%s-Overlay\'" -e "DataFile=\'../%s\'" -e "set title \'CD Spec (%s): Absorbance Vs Wavelength\'" "%s"  -e "plot DataFile index 0 using 1:2 w p pt 7 ps 0.4 lc rgb \'black\' notitle, %s, %s, %s"' % (result.cdpro_input, time.strftime("%Y%m%d"), result.cdpro_input, result.cdpro_input, gnuplot_basefile, continll_plot_cmd, cdsstr_plot_cmd, selcon3_plot_cmd), shell=True)
->>>>>>> 475016a0087cd1723d7690b3da80113f69b784af
 
