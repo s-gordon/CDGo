@@ -2,17 +2,22 @@
 
 ## What is this repository for?
 
+Modelling of CD data using CDPro.
+
+Note that these scripts are still particularly fragile.
+
 ## How do I install it?
 Easiest way to download is by using git:
 ```sh
 git clone https://bitbucket.org/s-gordon/CDGo.git
 ```
 
-There are several dependencies:
+## Dependencies
 * GNUPlot
 * Wine
 * Perl
 * Python 2.7+
+* GNU Sed
 
 Most of these can be installed through Homebrew (OSX) or your trusty Linux
 package manager.
@@ -20,6 +25,11 @@ package manager.
 Homebrew:
 ```sh
 brew install gnuplot wine
+```
+
+OSX Ships with a Unix-flavoured version of Sed. Install GNU Sed with homebrew:
+```sh
+brew install gnu-sed --with-default-names
 ```
 
 Apt:
