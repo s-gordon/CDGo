@@ -10,7 +10,7 @@ import argparse
 import subprocess
 import shutil
 import time
-# import shlex
+
 
 # Argparse
 class MyParser(argparse.ArgumentParser):
@@ -19,16 +19,15 @@ class MyParser(argparse.ArgumentParser):
         self.print_help()
         sys.exit(2)
 
-parser=MyParser(description='Run CDPro automatically.',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-
+parser = MyParser(description='Run CDPro automatically.',
+                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('-C', action="store", dest="cdpro_dir",
-        default="/Users/sgordon/.wine/drive_c/Program Files/CDPro",
-        help="CDPro executable directory")
+                    default="/Users/sgordon/.wine/drive_c/Program Files/CDPro",
+                    help="CDPro executable directory")
 parser.add_argument('-i', action="store", dest="cdpro_input",
-        required=True, help="CDPro executable directory")
+                    required=True, help="CDPro executable directory")
 parser.add_argument('-v', '--verbose',  action="store_true",
-        help="Increase verbosity")
+                    help="Increase verbosity")
 
 result = parser.parse_args()
 
@@ -120,14 +119,18 @@ def main():
     os.chdir(result.cdpro_dir)
     for ibasis in range(1, 11):
         logging.info('ibasis %s', ibasis)
-        subprocess.call(["sed -i '/PRINT/!b;n;c\      0\\t\\t%s' input && tr -d '^M' < input >> temp_input && mv temp_input input" % (ibasis)], shell=True)
+        subprocess.call(["sed -i '/PRINT/!b;n;c\      0\\t\\t%s' input &&\
+                         tr -d '^M' < input >> temp_input && mv temp_input\
+                         input" % (ibasis)], shell=True)
         logging.debug('Running CONTINLL')
-        subprocess.call(['echo | wine Continll.exe > stdout || echo -n " (crashed)"'], shell=True)
+        subprocess.call(['echo | wine Continll.exe > stdout || echo -n "\
+                         (crashed)"'], shell=True)
         continll_outdir = ('%s/continll-ibasis%s' % (cdpro_out_dir, ibasis))
         continll_out = cd_output_style("CONTINLL.OUT", "continll.out",
                                        "continll")
         make_dir(continll_outdir)
-        for f in ["CONTIN.CD", "CONTIN.OUT", "%s" % (continll_out), "BASIS.PG", "ProtSS.out", "SUMMARY.PG", "stdout"]:
+        for f in ["CONTIN.CD", "CONTIN.OUT", "%s" % (continll_out), "BASIS.PG",
+                  "ProtSS.out", "SUMMARY.PG", "stdout"]:
             print(f, "%s/" % (continll_outdir))
             shutil.move(f, "%s/" % (continll_outdir))
         if os.path.isfile("input"):
@@ -152,13 +155,15 @@ def main():
         # selcon_quality = 1
         # with open('%s' % (selcon3_out)) as fp:
         #     for line in fp:
-        #         if line.find('Program CRASHED -- No SOLUTIONS were Obtained') == 1:
+        #         if line.find('Program CRASHED -- No SOLUTIONS were Obtained')\
+            #         == 1:
         #             logging.error('SELCON3 crashed')
         #             selcon_quality = 0
 
         # if selcon_quality != 0:
         #     make_dir(selcon3_outdir)
-        #     for f in ["CalcCD.OUT", "ProtSS.out", "%s" % (selcon3_out), "stdout"]:
+        #     for f in ["CalcCD.OUT", "ProtSS.out", "%s" % (selcon3_out),
+        #     "stdout"]:
         #         shutil.move(f, "%s/" % (selcon3_outdir))
         #         if os.path.isfile("input"):
         #             shutil.copy("input", "%s/" % (selcon3_outdir))
@@ -179,22 +184,87 @@ def main():
         logging.info('Best ibasis for %s: %s' % (algorithm, best_ibasis))
 
         if algorithm == "continll":
-            subprocess.call('echo %s > best-%s' % (best_ibasis, algorithm), shell=True)
-            continll_plot_cmd = "\'%s/CONTIN.CD\' index 0 using 1:3 w l smooth csplines title \'%s ibasis %s: RMSD=%s\'" % (ibasis_dir, algorithm, best_ibasis, best_rmsd)
-            subprocess.call('gnuplot -e "Assay=\'CDSpec-%s-%s-bestContinll\'" -e "DataFile=\'../%s\'" -e "set title \'CD Spec (%s): Absorbance Vs Wavelength\'" "%s"  -e "plot DataFile index 0 using 1:2 w p pt 7 ps 0.4 lc rgb \'black\' notitle, %s"' % (result.cdpro_input, time.strftime("%Y%m%d"), result.cdpro_input, result.cdpro_input, gnuplot_basefile, continll_plot_cmd), shell=True)
+            subprocess.call('echo %s > best-%s' % (best_ibasis, algorithm),
+                            shell=True)
+            continll_plot_cmd = "\'%s/CONTIN.CD\' index 0 using 1:3 w l smooth \
+                csplines title \'%s ibasis %s: RMSD=%s\'" % (ibasis_dir,
+                                                             algorithm,
+                                                             best_ibasis,
+                                                             best_rmsd)
+            subprocess.call('gnuplot -e "Assay=\'CDSpec-%s-%s-bestContinll\'" \
+                            -e "DataFile=\'../%s\'" -e "set title \'CD Spec \
+                            (%s): Absorbance Vs Wavelength\'" "%s"  -e "plot \
+                            DataFile index 0 using 1:2 w p pt 7 ps 0.4 lc rgb \
+                            \'black\' notitle, %s"' % (result.cdpro_input,
+                                                       time.strftime("%Y%m%d"),
+                                                       result.cdpro_input,
+                                                       result.cdpro_input,
+                                                       gnuplot_basefile,
+                                                       continll_plot_cmd),
+                            shell=True)
         elif algorithm == "cdsstr":
-            subprocess.call('echo %s > best-%s' % (best_ibasis, algorithm), shell=True)
-            cdsstr_plot_cmd = "\'%s/reconCD.out\' index 0 using 1:3 w l smooth csplines title \'%s ibasis %s: RMSD= %s\'" % (ibasis_dir, algorithm, best_ibasis, best_rmsd)
-            subprocess.call('gnuplot -e "Assay=\'CDSpec-%s-%s-bestCDsstr\'" -e "DataFile=\'../%s\'" -e "set title \'CD Spec (%s): Absorbance Vs Wavelength\'" "%s"  -e "plot DataFile index 0 using 1:2 w p pt 7 ps 0.4 lc rgb \'black\' notitle, %s"' % (result.cdpro_input, time.strftime("%Y%m%d"), result.cdpro_input, result.cdpro_input, gnuplot_basefile, cdsstr_plot_cmd), shell=True)
+            subprocess.call('echo %s > best-%s' % (best_ibasis, algorithm),
+                            shell=True)
+            cdsstr_plot_cmd = "\'%s/reconCD.out\' index 0 using 1:3 w l smooth \
+                csplines title \'%s ibasis %s: RMSD= %s\'" % (ibasis_dir,
+                                                              algorithm,
+                                                              best_ibasis,
+                                                              best_rmsd)
+            subprocess.call('gnuplot -e "Assay=\'CDSpec-%s-%s-bestCDsstr\'" -e \
+                            "DataFile=\'../%s\'" -e "set title \'CD Spec \
+                            (%s): Absorbance Vs Wavelength\'" "%s"  -e "plot \
+                            DataFile index 0 using 1:2 w p pt 7 ps 0.4 lc rgb \
+                            \'black\' notitle, %s"' % (result.cdpro_input,
+                                                       time.strftime("%Y%m%d"),
+                                                       result.cdpro_input,
+                                                       result.cdpro_input,
+                                                       gnuplot_basefile,
+                                                       cdsstr_plot_cmd),
+                            shell=True)
         elif algorithm == "selcon3":
-            subprocess.call('echo %s > best-%s' % (best_ibasis, algorithm), shell=True)
-            selcon3_plot_cmd = "\'%s/CalcCD.OUT\' index 0 using 1:3 w l smooth csplines title \'%s ibasis %s: RMSD= %s\'" % (ibasis_dir, algorithm, best_ibasis, best_rmsd)
-            subprocess.call('gnuplot -e "Assay=\'CDSpec-%s-%s-bestSelcon3\'" -e "DataFile=\'../%s\'" -e "set title \'CD Spec (%s): Absorbance Vs Wavelength\'" "%s"  -e "plot DataFile index 0 using 1:2 w p pt 7 ps 0.4 lc rgb \'black\' notitle, %s"' % (result.cdpro_input, time.strftime("%Y%m%d"), result.cdpro_input, result.cdpro_input, gnuplot_basefile, selcon3_plot_cmd), shell=True)
+            subprocess.call('echo %s > best-%s' % (best_ibasis, algorithm),
+                            shell=True)
+            selcon3_plot_cmd = "\'%s/CalcCD.OUT\' index 0 using 1:3 w l smooth \
+                csplines title \'%s ibasis %s: RMSD= %s\'" % (ibasis_dir,
+                                                              algorithm,
+                                                              best_ibasis,
+                                                              best_rmsd)
+            subprocess.call('gnuplot -e "Assay=\'CDSpec-%s-%s-bestSelcon3\'" \
+                            -e "DataFile=\'../%s\'" -e "set title \'CD Spec \
+                            (%s): Absorbance Vs Wavelength\'" "%s"  -e "plot \
+                            DataFile index 0 using 1:2 w p pt 7 ps 0.4 lc rgb \
+                            \'black\' notitle, %s"' % (result.cdpro_input,
+                                                       time.strftime("%Y%m%d"),
+                                                       result.cdpro_input,
+                                                       result.cdpro_input,
+                                                       gnuplot_basefile,
+                                                       selcon3_plot_cmd),
+                            shell=True)
 
     # Print the gnuplot overlay
     logging.debug('Plotting fit overlays')
-    subprocess.call('gnuplot -e "Assay=\'CDSpec-%s-%s-Overlay\'" -e "DataFile=\'../%s\'" -e "set title \'CD Spec (%s): Absorbance Vs Wavelength\'" "%s"  -e "plot DataFile index 0 using 1:2 w p pt 7 ps 0.4 lc rgb \'black\' notitle, %s, %s"' % (result.cdpro_input, time.strftime("%Y%m%d"), result.cdpro_input, result.cdpro_input, gnuplot_basefile, continll_plot_cmd, cdsstr_plot_cmd), shell=True)
-    # subprocess.call('gnuplot -e "Assay=\'CDSpec-%s-%s-Overlay\'" -e "DataFile=\'../%s\'" -e "set title \'CD Spec (%s): Absorbance Vs Wavelength\'" "%s"  -e "plot DataFile index 0 using 1:2 w p pt 7 ps 0.4 lc rgb \'black\' notitle, %s, %s, %s"' % (result.cdpro_input, time.strftime("%Y%m%d"), result.cdpro_input, result.cdpro_input, gnuplot_basefile, continll_plot_cmd, cdsstr_plot_cmd, selcon3_plot_cmd), shell=True)
+    subprocess.call('gnuplot -e "Assay=\'CDSpec-%s-%s-Overlay\'" -e \
+                    "DataFile=\'../%s\'" -e "set title \'CD Spec (%s): \
+                    Absorbance Vs Wavelength\'" "%s"  -e "plot DataFile index \
+                    0 using 1:2 w p pt 7 ps 0.4 lc rgb \'black\' notitle, %s, \
+                    %s"' % (result.cdpro_input, time.strftime("%Y%m%d"),
+                            result.cdpro_input, result.cdpro_input,
+                            gnuplot_basefile, continll_plot_cmd,
+                            cdsstr_plot_cmd),
+                    shell=True)
+    # subprocess.call('gnuplot -e "Assay=\'CDSpec-%s-%s-Overlay\'" -e \
+    #                 "DataFile=\'../%s\'" -e "set title \'CD Spec (%s): \
+    #                 Absorbance Vs Wavelength\'" "%s"  -e "plot DataFile \
+    #                 index 0 using 1:2 w p pt 7 ps 0.4 lc rgb \'black\' \
+    #                 notitle, %s, %s, %s"' % (result.cdpro_input,
+    #                                          time.strftime("%Y%m%d"),
+    #                                          result.cdpro_input,
+    #                                          result.cdpro_input,
+    #                                          gnuplot_basefile,
+    #                                          continll_plot_cmd,
+    #                                          cdsstr_plot_cmd,
+    #                                          selcon3_plot_cmd),
+    #                 shell=True)
 
 if __name__ == '__main__':
     main()
