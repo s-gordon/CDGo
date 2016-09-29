@@ -13,7 +13,6 @@ git clone https://bitbucket.org/s-gordon/CDGo.git
 ```
 
 ## Dependencies
-* GNUPlot
 * Wine
 * Perl
 * Python 2.7+
@@ -54,6 +53,7 @@ format `<input>-CDPro`.
 
 ## Who do I talk to?
 * Shane Gordon
+* Tao Nelson
 
 ## Contributors
 See contributors.txt
