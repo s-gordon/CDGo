@@ -166,7 +166,7 @@ def main():
     shutil.copy("input", "%s/input" % (result.cdpro_dir))
     os.chdir(result.cdpro_dir)
     # for ibasis in range(1, 11):
-    for ibasis in range(1, 2):
+    for ibasis in range(1, 11):
         logging.info('ibasis %s', ibasis)
         subprocess.call(["sed -i '/PRINT/!b;n;c\      0\\t\\t%s' input &&\
                          tr -d '^M' < input >> temp_input && mv temp_input\
