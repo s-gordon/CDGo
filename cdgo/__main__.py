@@ -16,8 +16,18 @@ import time
 import matplotlib.pyplot as plt
 import pandas as pd
 import more_itertools
-from readers import header
+# from readers import header
 from readers import compare_ibases
+
+
+def allowed_ibasis_val(x):
+    x = int(x)
+    if 1 < x > 10:
+        raise argparse.ArgumentTypeError(
+            "Acceptable ibases are between 1 and 10"
+        )
+    sys.exit(2)
+    return x
 
 
 # Argparse
@@ -53,10 +63,10 @@ parser.add_argument('--continll', action="store_true", required=False,
                     following:
 
                     [1] Sreerama, N., & Woody, R. W. (2000). Estimation of
-                    protein secondary structure from circular dichroism spectra:
-                    comparison of CONTIN, SELCON, and CDSSTR methods with an
-                    expanded reference set. Analytical biochemistry, 287(2),
-                    252-260.
+                    protein secondary structure from circular dichroism
+                    spectra: comparison of CONTIN, SELCON, and CDSSTR methods
+                    with an expanded reference set. Analytical biochemistry,
+                    287(2), 252-260.
 
                     [2]
                     """)
@@ -223,17 +233,31 @@ def list_params(l):
 
 
 def single_line_scatter(datafile, fit_label, exp_label, outfile='output.png',
-                        flip=True, x_col_name='WaveL', y1_col_name='ExpCD',
-                        y2_col_name='CalcCD', xlabel='Wavelength (nm)',
+                        flip=True, x_col_name='WaveL',
+                        calc_col='CalcCD', xlabel='Wavelength (nm)',
                         ylabel='$\Delta\epsilon$ ($M^{-1}{\cdot}cm^{-1}$)'):
+    """Docstring for single_line_scatter
+
+    """
+
     fig, ax = plt.subplots(nrows=1, ncols=1)
     df = pd.read_table(datafile, skipinitialspace=True, sep=r"\s*",
                        engine='python')
+
     # Invert data vertically to compensate for CDPro output
     if flip is True:
         df = df.iloc[::-1]
-    df.plot(x=x_col_name, y=y1_col_name, style='o', ax=ax, label=exp_label)
-    df.plot(x=x_col_name, y=y2_col_name, style='-', ax=ax, label=fit_label)
+
+    try:
+        df.plot(x=x_col_name, y='ExpCD', style='.', ax=ax, label=exp_label)
+    except KeyError:
+        try:
+            df.plot(x=x_col_name, y='Exptl', style='o', ax=ax,
+                    label=exp_label)
+        except KeyError as e:
+            logging.error(e)
+
+    df.plot(x=x_col_name, y=calc_col, style='-', ax=ax, label=fit_label)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     plt.savefig(outfile, bbox_inches='tight')
@@ -326,8 +350,11 @@ def alg_eval(alg):
         f = 'reconCD.out'
     best_rmsd, best_ibasis, ibasis_dir = compare_ibases(alg)
     logging.info('Best %s RMSD: %s' % (alg, best_rmsd))
-    subprocess.call('echo %s > best-%s' % (best_ibasis, alg),
-                    shell=True)
+
+    with open('best-%s' % (alg), 'w') as fl:
+        fl.write(str(best_ibasis))
+        fl.close
+
     logging.info('Best ibasis for %s: %s' % (alg, best_ibasis))
     plot = '%s/%s' % (ibasis_dir, f)
     label = '{} ibasis {}: RMSD={}'.format(alg,
@@ -365,8 +392,8 @@ def main():
     cdpro_input_writer(body, head)
 
     # Column headers for continll and cdsstr
-    head_continll = header()['continll']
-    head_cdsstr = header()['cdsstr']
+    # head_continll = header()['continll']
+    # head_cdsstr = header()['cdsstr']
 
     check_cmd(
         'wine',
@@ -385,11 +412,15 @@ def main():
                                              cdpro_out_dir))
     shutil.copy("input", "%s/input" % (result.cdpro_dir))
     os.chdir(result.cdpro_dir)
-    for ibasis in [1, 2]:
+
+    for ibasis in (range(1, 3)):
+
         logging.info('ibasis %s', ibasis)
+
         subprocess.call(["sed -i '/PRINT/!b;n;c\      0\\t\\t%s' input &&\
                          tr -d '^M' < input >> temp_input && mv temp_input\
                          input" % (ibasis)], shell=True)
+
         if result.continll is True:
             logging.debug('Running CONTINLL')
             subprocess.call(['echo | wine Continll.exe > stdout || echo -n "\
@@ -401,7 +432,6 @@ def main():
             make_dir(continll_outdir)
             for f in ["CONTIN.CD", "CONTIN.OUT", "%s" % (continll_out),
                       "BASIS.PG", "ProtSS.out", "SUMMARY.PG", "stdout"]:
-                logging.debug(f, "%s/" % (continll_outdir))
                 shutil.move(f, "%s/" % (continll_outdir))
                 if os.path.isfile("input"):
                     shutil.copy("input", "%s/" % (continll_outdir))
@@ -417,7 +447,6 @@ def main():
 
             for f in ["reconCD.out", "ProtSS.out", "%s" % (cdsstr_out),
                       "stdout"]:
-                logging.debug(f, "%s/" % (cdsstr_outdir))
                 shutil.move(f, "%s/" % (cdsstr_outdir))
             if os.path.isfile("input"):
                 shutil.copy("input", "%s/" % (cdsstr_outdir))
@@ -438,20 +467,13 @@ def main():
     outfile = 'CDSpec-{}-{}-Overlay.png'.format(
         result.cdpro_input, time.strftime("%Y%m%d"))
 
-    # if all((result.continll, result.cdsstr)):
-    #     double_line_scatter(continll_plot, cdsstr_plot, continll_label,
-    #                         cdsstr_label, exp_label='Exp',
-    #                         df1_headers=head_continll,
-    #                         df2_headers=head_cdsstr,
-    #                         outfile=outfile)
-
     if result.continll is True:
         single_line_scatter(continll_plot, continll_label,
-                            exp_label='Exp', y1_col_name='ExpCD',
+                            exp_label='Exp',
                             outfile=outfile)
     if result.cdsstr is True:
         single_line_scatter(cdsstr_plot, cdsstr_label,
-                            exp_label='Exp', y1_col_name='Exptl',
+                            exp_label='Exp',
                             outfile=outfile)
 
 if __name__ == '__main__':
