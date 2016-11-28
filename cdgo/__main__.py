@@ -4,6 +4,7 @@
 # CREATED:  2015-06-06 13:12:10
 
 import os
+import re
 import sys
 import logging
 import argparse
@@ -113,6 +114,23 @@ def read_aviv(f, save_line_no=False, last_line_no=False):
     # Throw away data when the dynode voltage peaks beyond 600
     df = df[(df.CD_Dynode < 600)]
     return df, line_no if save_line_no is True else df
+
+
+def replace_input(input, output, ibasis):
+    """
+    return: None
+    """
+
+    pattern = '# PRINT(.*\n)\s+(\S+)(.*)'
+    replace = '# PRINT    IBasis\n      0         {}'.format(ibasis)
+    f = open(input, 'r')
+    lines = f.read()
+    f.close()
+    r = re.sub(pattern, replace, lines)
+
+    with open(output, 'w') as o:
+        for line in r:
+            o.write(line)
 
 
 def set_style():
@@ -397,9 +415,6 @@ def main():
 
     check_cmd(
         'wine',
-        'grep',
-        'awk',
-        'sed'
     )
 
     check_dir(result.cdpro_dir)
@@ -417,9 +432,7 @@ def main():
 
         logging.info('ibasis %s', ibasis)
 
-        subprocess.call(["sed -i '/PRINT/!b;n;c\      0\\t\\t%s' input &&\
-                         tr -d '^M' < input >> temp_input && mv temp_input\
-                         input" % (ibasis)], shell=True)
+        replace_input('input', 'input', ibasis)
 
         if result.continll is True:
             logging.debug('Running CONTINLL')
