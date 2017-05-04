@@ -9,7 +9,6 @@ git clone https://bitbucket.org/s-gordon/CDGo.git
 ## Dependencies
 * Wine
 * Python 2.7+
-* GNU Sed
 
 Most of these can be installed through Homebrew (OSX) or your trusty Linux
 package manager.
