@@ -411,6 +411,15 @@ def read_protss_assignment(f):
     def dec_to_percent(n):
         return n * 100
 
+    def format_val(v):
+        """Takes in float and formats as str with no decimal places
+
+        :v: float
+        :returns: str
+
+        """
+        return '{}%'.format(int(v))
+
     ibasis_group_1 = {
         'members': ['SP29', 'SP37', 'SP43', 'SDP42', 'SDP48', 'CLSTR', 'SMP50',
                     'SMP56'],
@@ -432,10 +441,10 @@ def read_protss_assignment(f):
     """
     ss, db = find_line(f, 'Fractions')
     if db in ibasis_group_1['members']:
-        ahelix = dec_to_percent((ss[0] + ss[1])/sum(ss))
-        bstrand = dec_to_percent(ss[2] + ss[3])/sum(ss)
-        turn = dec_to_percent(ss[4]/sum(ss))
-        unord = dec_to_percent(ss[5]/sum(ss))
+        ahelix = format_val(dec_to_percent((ss[0] + ss[1])/sum(ss)))
+        bstrand = format_val(dec_to_percent(ss[2] + ss[3])/sum(ss))
+        turn = format_val(dec_to_percent(ss[4]/sum(ss)))
+        unord = format_val(dec_to_percent(ss[5]/sum(ss)))
         ss = {
             'ahelix': ahelix,
             'bstrand': bstrand,
@@ -443,10 +452,10 @@ def read_protss_assignment(f):
             'unord': unord
         }
     elif db in ibasis_group_2['members']:
-        ahelix = dec_to_percent((ss[0] + ss[1])/sum(ss))
-        bstrand = dec_to_percent(ss[2]/sum(ss))
-        turn = dec_to_percent(ss[3]/sum(ss))
-        unord = dec_to_percent((ss[4] + ss[5])/sum(ss))
+        ahelix = format_val(dec_to_percent((ss[0] + ss[1])/sum(ss)))
+        bstrand = format_val(dec_to_percent(ss[2]/sum(ss)))
+        turn = format_val(dec_to_percent(ss[3]/sum(ss)))
+        unord = format_val(dec_to_percent((ss[4] + ss[5])/sum(ss)))
         ss = {
             'ahelix': ahelix,
             'bstrand': bstrand,
@@ -454,10 +463,10 @@ def read_protss_assignment(f):
             'unord': unord
         }
     elif db in ibasis_group_3['members']:
-        ahelix = dec_to_percent(ss[0]/sum(ss))
-        bstrand = dec_to_percent(ss[1]/sum(ss))
-        turn = dec_to_percent(ss[2]/sum(ss))
-        unord = dec_to_percent((ss[3] + ss[4])/sum(ss))
+        ahelix = format_val(dec_to_percent(ss[0]/sum(ss)))
+        bstrand = format_val(dec_to_percent(ss[1]/sum(ss)))
+        turn = format_val(dec_to_percent(ss[2]/sum(ss)))
+        unord = format_val(dec_to_percent((ss[3] + ss[4])/sum(ss)))
         ss = {
             'ahelix': ahelix,
             'bstrand': bstrand,
@@ -596,7 +605,7 @@ def main():
     ss_assignments.to_csv(
         '{}/secondary_structure_summary.csv'.format(cdpro_out_dir)
     )
-    logging.info(ss_assignments)
+    logging.debug(ss_assignments)
 
 if __name__ == '__main__':
     main()
