@@ -387,6 +387,86 @@ def alg_eval(alg):
     return plot, label
 
 
+def read_protss_assignment(f):
+    """read in ProtSS file from CDPro and parse sec struc assignments
+
+    :f: TODO
+    :ibasis: ibasis reference for ProtSS
+    :returns: TODO
+    """
+
+    def find_line(fname, pattern):
+        with open(fname) as search:
+            for line in search:
+                line = line.strip()  # remove '\n' at EOL
+                if pattern in line:
+                    o = line.split()[2:]  # output ss as list
+                    o = [float(i) for i in o]  # convert to float
+                if 'Ref. Prot. Set' in line:
+                    db = line
+                    db = db.split()[3]  # split db to get int
+                    db = db
+        return o, db
+
+    def dec_to_percent(n):
+        return n * 100
+
+    ibasis_group_1 = {
+        'members': ['SP29', 'SP37', 'SP43', 'SDP42', 'SDP48', 'CLSTR', 'SMP50',
+                    'SMP56'],
+        'ss': ['H(r)', 'H(d)', 'S(r)', 'S(d)', 'Trn', 'Unrd']
+    }
+    ibasis_group_2 = {
+        'members': ['SP22X'],
+        'ss': ['H', '3/10', 'S', 'Turn', 'PP2', 'Unrd']
+    }
+    ibasis_group_3 = {
+        'members': ['SP37A'],
+        'ss': ['H', 'S', 'Turn', 'PP2', 'Unrd']
+    }
+
+    """
+    for each ibasis, parse through output and collect secondary structure
+    lines using pattern 'Fractions'. Split output into list, removing the first
+    two (irrelevant) entries.
+    """
+    ss, db = find_line(f, 'Fractions')
+    if db in ibasis_group_1['members']:
+        ahelix = dec_to_percent((ss[0] + ss[1])/sum(ss))
+        bstrand = dec_to_percent(ss[2] + ss[3])/sum(ss)
+        turn = dec_to_percent(ss[4]/sum(ss))
+        unord = dec_to_percent(ss[5]/sum(ss))
+        ss = {
+            'ahelix': ahelix,
+            'bstrand': bstrand,
+            'turn': turn,
+            'unord': unord
+        }
+    elif db in ibasis_group_2['members']:
+        ahelix = dec_to_percent((ss[0] + ss[1])/sum(ss))
+        bstrand = dec_to_percent(ss[2]/sum(ss))
+        turn = dec_to_percent(ss[3]/sum(ss))
+        unord = dec_to_percent((ss[4] + ss[5])/sum(ss))
+        ss = {
+            'ahelix': ahelix,
+            'bstrand': bstrand,
+            'turn': turn,
+            'unord': unord
+        }
+    elif db in ibasis_group_3['members']:
+        ahelix = dec_to_percent(ss[0]/sum(ss))
+        bstrand = dec_to_percent(ss[1]/sum(ss))
+        turn = dec_to_percent(ss[2]/sum(ss))
+        unord = dec_to_percent((ss[3] + ss[4])/sum(ss))
+        ss = {
+            'ahelix': ahelix,
+            'bstrand': bstrand,
+            'turn': turn,
+            'unord': unord
+        }
+    return ss, db
+
+
 def main():
 
     dat, l = read_aviv(result.cdpro_input, save_line_no=True)
@@ -427,16 +507,19 @@ def main():
                                              cdpro_out_dir))
     shutil.copy("input", "%s/input" % (result.cdpro_dir))
     os.chdir(result.cdpro_dir)
+    ss_assignments = pd.DataFrame()
 
-    for ibasis in (range(1, 3)):
+    for ibasis in (range(1, 11)):
 
         logging.info('ibasis %s', ibasis)
 
         replace_input('input', 'input', ibasis)
 
+        ss_col_head = ['ibasis', 'alg', 'ahelix', 'bstrand', 'turn', 'unord']
+
         if result.continll is True:
             logging.debug('Running CONTINLL')
-            subprocess.call(['echo | wine Continll.exe > stdout || echo -n "\
+            subprocess.call(['echo | WINEDEBUG=-all wine Continll.exe > stdout || echo -n "\
                              (crashed)"'], shell=True)
             continll_outdir = ('%s/continll-ibasis%s' % (cdpro_out_dir,
                                                          ibasis))
@@ -448,13 +531,20 @@ def main():
                 shutil.move(f, "%s/" % (continll_outdir))
                 if os.path.isfile("input"):
                     shutil.copy("input", "%s/" % (continll_outdir))
+            ss, db = read_protss_assignment(
+                '{}/ProtSS.out'.format(continll_outdir)
+            )
+            df = pd.DataFrame(
+                [[db, 'continll', ss['ahelix'], ss['bstrand'], ss['turn'],
+                 ss['unord']]], index=[ibasis]
+            )
+            ss_assignments = ss_assignments.append(df)
 
         if result.cdsstr is True:
             logging.debug('Running CDSSTR')
-            subprocess.call(['echo | wine CDSSTR.EXE > stdout || echo -n "\
+            subprocess.call(['echo | WINEDEBUG=-all wine CDSSTR.EXE > stdout || echo -n "\
                              (crashed)"'], shell=True)
-            cdsstr_outdir = ('%s/cdsstr-ibasis%s' % (cdpro_out_dir,
-                                                     ibasis))
+            cdsstr_outdir = ('%s/cdsstr-ibasis%s' % (cdpro_out_dir, ibasis))
             make_dir(cdsstr_outdir)
             cdsstr_out = cd_output_style("CDsstr.out", "cdsstr.out", "CDSSTR")
 
@@ -463,6 +553,14 @@ def main():
                 shutil.move(f, "%s/" % (cdsstr_outdir))
             if os.path.isfile("input"):
                 shutil.copy("input", "%s/" % (cdsstr_outdir))
+            ss, db = read_protss_assignment(
+                '{}/ProtSS.out'.format(cdsstr_outdir),
+            )
+            df = pd.DataFrame(
+                [[db, 'cdsstr', ss['ahelix'], ss['bstrand'], ss['turn'],
+                 ss['unord']]], index=[ibasis]
+            )
+            ss_assignments = ss_assignments.append(df)
 
     os.chdir(cdpro_out_dir)
 
@@ -481,13 +579,24 @@ def main():
         result.cdpro_input, time.strftime("%Y%m%d"))
 
     if result.continll is True:
-        single_line_scatter(continll_plot, continll_label,
-                            exp_label='Exp',
-                            outfile=outfile)
+        single_line_scatter(
+            continll_plot, continll_label,
+            exp_label='Exp',
+            outfile=outfile
+        )
+
     if result.cdsstr is True:
-        single_line_scatter(cdsstr_plot, cdsstr_label,
-                            exp_label='Exp',
-                            outfile=outfile)
+        single_line_scatter(
+            cdsstr_plot, cdsstr_label,
+            exp_label='Exp',
+            outfile=outfile
+        )
+
+    ss_assignments.columns = ss_col_head
+    ss_assignments.to_csv(
+        '{}/secondary_structure_summary.csv'.format(cdpro_out_dir)
+    )
+    logging.info(ss_assignments)
 
 if __name__ == '__main__':
     main()
