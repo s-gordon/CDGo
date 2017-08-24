@@ -403,10 +403,13 @@ def read_protss_assignment(f):
                     o = line.split()[2:]  # output ss as list
                     o = [float(i) for i in o]  # convert to float
                 if 'Ref. Prot. Set' in line:
-                    db = line
-                    db = db.split()[3]  # split db to get int
-                    db = db
-        return o, db
+                    db = line.split()[3]  # split db to get int
+                if 'RMSD(Exp-Calc)' in line and 'NRMSD(Exp-Calc)' not in line:
+                    rmsd = line.split()[1]  # split line to get rmsd
+                    rmsd = float(rmsd)
+                    rmsd = '{:.3f}'.format(rmsd)
+
+        return o, db, rmsd
 
     def dec_to_percent(n):
         return n * 100
@@ -439,7 +442,7 @@ def read_protss_assignment(f):
     lines using pattern 'Fractions'. Split output into list, removing the first
     two (irrelevant) entries.
     """
-    ss, db = find_line(f, 'Fractions')
+    ss, db, rmsd = find_line(f, 'Fractions')
     if db in ibasis_group_1['members']:
         ahelix = format_val(dec_to_percent((ss[0] + ss[1])/sum(ss)))
         bstrand = format_val(dec_to_percent(ss[2] + ss[3])/sum(ss))
@@ -473,7 +476,7 @@ def read_protss_assignment(f):
             'turn': turn,
             'unord': unord
         }
-    return ss, db
+    return ss, db, rmsd
 
 
 def main():
@@ -524,7 +527,8 @@ def main():
 
         replace_input('input', 'input', ibasis)
 
-        ss_col_head = ['ibasis', 'alg', 'ahelix', 'bstrand', 'turn', 'unord']
+        ss_col_head = ['ibasis', 'alg', 'ahelix', 'bstrand', 'turn', 'unord',
+                       'rmsd']
 
         if result.continll is True:
             logging.debug('Running CONTINLL')
@@ -540,12 +544,13 @@ def main():
                 shutil.move(f, "%s/" % (continll_outdir))
                 if os.path.isfile("input"):
                     shutil.copy("input", "%s/" % (continll_outdir))
-            ss, db = read_protss_assignment(
+
+            ss, db, rmsd = read_protss_assignment(
                 '{}/ProtSS.out'.format(continll_outdir)
             )
             df = pd.DataFrame(
                 [[db, 'continll', ss['ahelix'], ss['bstrand'], ss['turn'],
-                 ss['unord']]], index=[ibasis]
+                  ss['unord'], rmsd]], index=[ibasis]
             )
             ss_assignments = ss_assignments.append(df)
 
@@ -562,12 +567,13 @@ def main():
                 shutil.move(f, "%s/" % (cdsstr_outdir))
             if os.path.isfile("input"):
                 shutil.copy("input", "%s/" % (cdsstr_outdir))
-            ss, db = read_protss_assignment(
+
+            ss, db, rmsd = read_protss_assignment(
                 '{}/ProtSS.out'.format(cdsstr_outdir),
             )
             df = pd.DataFrame(
                 [[db, 'cdsstr', ss['ahelix'], ss['bstrand'], ss['turn'],
-                 ss['unord']]], index=[ibasis]
+                  ss['unord'], rmsd]], index=[ibasis]
             )
             ss_assignments = ss_assignments.append(df)
 
@@ -605,7 +611,7 @@ def main():
     ss_assignments.to_csv(
         '{}/secondary_structure_summary.csv'.format(cdpro_out_dir)
     )
-    logging.debug(ss_assignments)
+    logging.info('\n{}\n'.format(ss_assignments))
 
 if __name__ == '__main__':
     main()
