@@ -415,13 +415,13 @@ def read_protss_assignment(f):
         return n * 100
 
     def format_val(v):
-        """Takes in float and formats as str with no decimal places
+        """Takes in float and formats as str with 1 decimal place
 
         :v: float
         :returns: str
 
         """
-        return '{}%'.format(int(v))
+        return '{:.1f}%'.format(v)
 
     ibasis_group_1 = {
         'members': ['SP29', 'SP37', 'SP43', 'SDP42', 'SDP48', 'CLSTR', 'SMP50',
@@ -444,10 +444,10 @@ def read_protss_assignment(f):
     """
     ss, db, rmsd = find_line(f, 'Fractions')
     if db in ibasis_group_1['members']:
-        ahelix = format_val(dec_to_percent((ss[0] + ss[1])/sum(ss)))
-        bstrand = format_val(dec_to_percent(ss[2] + ss[3])/sum(ss))
-        turn = format_val(dec_to_percent(ss[4]/sum(ss)))
-        unord = format_val(dec_to_percent(ss[5]/sum(ss)))
+        ahelix = format_val(dec_to_percent((ss[0] + ss[1])/np.sum(ss)))
+        bstrand = format_val(dec_to_percent(ss[2] + ss[3])/np.sum(ss))
+        turn = format_val(dec_to_percent(ss[4]/np.sum(ss)))
+        unord = format_val(dec_to_percent(ss[5]/np.sum(ss)))
         ss = {
             'ahelix': ahelix,
             'bstrand': bstrand,
@@ -455,10 +455,10 @@ def read_protss_assignment(f):
             'unord': unord
         }
     elif db in ibasis_group_2['members']:
-        ahelix = format_val(dec_to_percent((ss[0] + ss[1])/sum(ss)))
-        bstrand = format_val(dec_to_percent(ss[2]/sum(ss)))
-        turn = format_val(dec_to_percent(ss[3]/sum(ss)))
-        unord = format_val(dec_to_percent((ss[4] + ss[5])/sum(ss)))
+        ahelix = format_val(dec_to_percent((ss[0] + ss[1])/np.sum(ss)))
+        bstrand = format_val(dec_to_percent(ss[2]/np.sum(ss)))
+        turn = format_val(dec_to_percent(ss[3]/np.sum(ss)))
+        unord = format_val(dec_to_percent((ss[4] + ss[5])/np.sum(ss)))
         ss = {
             'ahelix': ahelix,
             'bstrand': bstrand,
@@ -466,10 +466,10 @@ def read_protss_assignment(f):
             'unord': unord
         }
     elif db in ibasis_group_3['members']:
-        ahelix = format_val(dec_to_percent(ss[0]/sum(ss)))
-        bstrand = format_val(dec_to_percent(ss[1]/sum(ss)))
-        turn = format_val(dec_to_percent(ss[2]/sum(ss)))
-        unord = format_val(dec_to_percent((ss[3] + ss[4])/sum(ss)))
+        ahelix = format_val(dec_to_percent(ss[0]/np.sum(ss)))
+        bstrand = format_val(dec_to_percent(ss[1]/np.sum(ss)))
+        turn = format_val(dec_to_percent(ss[2]/np.sum(ss)))
+        unord = format_val(dec_to_percent((ss[3] + ss[4])/np.sum(ss)))
         ss = {
             'ahelix': ahelix,
             'bstrand': bstrand,
