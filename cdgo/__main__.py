@@ -38,6 +38,7 @@ class MyParser(argparse.ArgumentParser):
         self.print_help()
         sys.exit(2)
 
+
 parser = MyParser(description='Run CDPro automatically.',
                   formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('-C', action="store", dest="cdpro_dir",
@@ -237,16 +238,16 @@ def chunks(l, n):
         yield l[i:i + n]
 
 
-def list_params(l):
+def list_params(df):
     """Get key list params.
 
-    :l: pandas dataframe
+    :df: pandas dataframe
     :returns: list max, min, and step size of the pandas indices
     """
-    l = l.index.astype(float)
-    max = l.max()
-    min = l.min()
-    step = l[-1]-l[-2]
+    df = df.index.astype(float)
+    max = df.max()
+    min = df.min()
+    step = df[-1] - df[-2]
     return min, max, step
 
 
@@ -481,8 +482,8 @@ def read_protss_assignment(f):
 
 def main():
 
-    dat, l = read_aviv(result.cdpro_input, save_line_no=True)
-    buf, l = read_aviv(result.buffer, save_line_no=False, last_line_no=l)
+    dat, lline = read_aviv(result.cdpro_input, save_line_no=True)
+    buf = read_aviv(result.buffer, save_line_no=False, last_line_no=lline)[0]
 
     df = (dat - buf).dropna()
 
@@ -500,10 +501,6 @@ def main():
     head = cdpro_input_header(max, min, 1)
     body = list(more_itertools.chunked(epsilon[::-1], 10))
     cdpro_input_writer(body, head)
-
-    # Column headers for continll and cdsstr
-    # head_continll = header()['continll']
-    # head_cdsstr = header()['cdsstr']
 
     check_cmd(
         'wine',
@@ -612,6 +609,7 @@ def main():
         '{}/secondary_structure_summary.csv'.format(cdpro_out_dir)
     )
     logging.info('\n{}\n'.format(ss_assignments))
+
 
 if __name__ == '__main__':
     main()
