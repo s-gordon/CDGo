@@ -251,7 +251,7 @@ def list_params(df):
     return min, max, step
 
 
-def single_line_scatter(datafile, fit_label, exp_label, outfile='output.png',
+def single_line_scatter(datafile, fit_label, exp_label, ax,
                         flip=True, x_col_name='WaveL',
                         calc_col='CalcCD', xlabel='Wavelength (nm)',
                         ylabel='$\Delta\epsilon$ ($M^{-1}{\cdot}cm^{-1}$)'):
@@ -259,7 +259,6 @@ def single_line_scatter(datafile, fit_label, exp_label, outfile='output.png',
 
     """
 
-    fig, ax = plt.subplots(nrows=1, ncols=1)
     df = pd.read_table(datafile, skipinitialspace=True, sep=r"\s*",
                        engine='python')
 
@@ -271,15 +270,14 @@ def single_line_scatter(datafile, fit_label, exp_label, outfile='output.png',
         df.plot(x=x_col_name, y='ExpCD', style='.', ax=ax, label=exp_label)
     except KeyError:
         try:
-            df.plot(x=x_col_name, y='Exptl', style='o', ax=ax,
-                    label=exp_label)
+            df.plot(x=x_col_name, y='Exptl', style='.', ax=ax, label=exp_label)
         except KeyError as e:
             logging.error(e)
 
     df.plot(x=x_col_name, y=calc_col, style='-', ax=ax, label=fit_label)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
-    plt.savefig(outfile, bbox_inches='tight')
+    # plt.savefig(outfile, bbox_inches='tight')
 
 
 def cdpro_input_writer(body, head, fname='input'):
@@ -367,7 +365,14 @@ def alg_eval(alg):
         f = 'CONTIN.CD'
     elif alg == "cdsstr":
         f = 'reconCD.out'
-    best_rmsd, best_ibasis, ibasis_dir = compare_ibases(alg)
+
+    protss = compare_ibases(alg)
+    topfit = protss.ix[protss['rmsd'].idxmin()]
+    best_rmsd = topfit['rmsd']
+    best_ibasis = topfit['dset_int']
+    ibasis_dir = topfit['protss'][0:-11]
+
+    # best_rmsd, best_ibasis, ibasis_dir = compare_ibases(alg)
     logging.info('Best %s RMSD: %s' % (alg, best_rmsd))
 
     with open('best-%s' % (alg), 'w') as fl:
@@ -379,12 +384,12 @@ def alg_eval(alg):
     label = '{} ibasis {}: RMSD={}'.format(alg,
                                            best_ibasis,
                                            best_rmsd)
-    outfile = 'CDSpec-{}-{}-best{}.png'.format(
-        result.cdpro_input,
-        time.strftime("%Y%m%d"),
-        alg
-    )
-    single_line_scatter(plot, label, 'Exp', outfile=outfile)
+    # outfile = 'CDSpec-{}-{}-best{}.png'.format(
+    #     result.cdpro_input,
+    #     time.strftime("%Y%m%d"),
+    #     alg
+    # )
+    # single_line_scatter(plot, label, 'Exp', ax, outfile=outfile)
     return plot, label
 
 
@@ -502,9 +507,7 @@ def main():
     body = list(more_itertools.chunked(epsilon[::-1], 10))
     cdpro_input_writer(body, head)
 
-    check_cmd(
-        'wine',
-    )
+    check_cmd('wine')
 
     check_dir(result.cdpro_dir)
 
@@ -590,19 +593,20 @@ def main():
     outfile = 'CDSpec-{}-{}-Overlay.png'.format(
         result.cdpro_input, time.strftime("%Y%m%d"))
 
+    fig, ax = plt.subplots(nrows=1, ncols=1)
+
     if result.continll is True:
         single_line_scatter(
-            continll_plot, continll_label,
-            exp_label='Exp',
-            outfile=outfile
+            continll_plot, continll_label, 'CONTINLL Exp', ax
         )
 
     if result.cdsstr is True:
         single_line_scatter(
-            cdsstr_plot, cdsstr_label,
-            exp_label='Exp',
-            outfile=outfile
+            cdsstr_plot, cdsstr_label, 'CDSSTR Exp', ax
         )
+
+    ax.legend()
+    plt.savefig(outfile, bbox_inches='tight')
 
     ss_assignments.columns = ss_col_head
     ss_assignments.to_csv(
