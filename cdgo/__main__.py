@@ -505,6 +505,7 @@ def main():
 
     head = cdpro_input_header(max, min, 1)
     body = list(more_itertools.chunked(epsilon[::-1], 10))
+    # body = list(more_itertools.chunked(epsilon[::], 10))
     cdpro_input_writer(body, head)
 
     check_cmd('wine')
