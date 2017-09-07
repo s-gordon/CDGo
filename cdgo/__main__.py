@@ -10,14 +10,12 @@ import logging
 import argparse
 import subprocess
 import numpy as np
-# import glob
 import shutil
 import seaborn as sns
 import time
 import matplotlib.pyplot as plt
 import pandas as pd
 import more_itertools
-# from readers import header
 from readers import compare_ibases
 
 
@@ -393,6 +391,49 @@ def alg_eval(alg):
     return plot, label
 
 
+def dec_to_percent(n):
+    """Docstring for dec_to_percent
+
+    :n: float value or list as fraction
+    :returns: value or list multiplied by 10e2
+    """
+
+    return n * 100
+
+
+def format_val(v):
+    """Takes in float and formats as str with 1 decimal place
+
+    :v: float
+    :returns: str
+
+    """
+    return '{:.1f}%'.format(v)
+
+
+def find_line(fname, pattern):
+    """Docstring for find_line
+
+    :fname: file name
+    :pattern:
+    :returns:
+
+    """
+    with open(fname) as search:
+        for line in search:
+            line = line.strip()  # remove '\n' at EOL
+            if pattern in line:
+                o = line.split()[2:]  # output ss as list
+                o = [float(i) for i in o]  # convert to float
+            if 'Ref. Prot. Set' in line:
+                db = line.split()[3]  # split db to get int
+            if 'RMSD(Exp-Calc)' in line and 'NRMSD(Exp-Calc)' not in line:
+                rmsd = line.split()[1]  # split line to get rmsd
+                rmsd = float(rmsd)
+                rmsd = '{:.3f}'.format(rmsd)
+    return o, db, rmsd
+
+
 def read_protss_assignment(f):
     """read in ProtSS file from CDPro and parse sec struc assignments
 
@@ -400,34 +441,6 @@ def read_protss_assignment(f):
     :ibasis: ibasis reference for ProtSS
     :returns: TODO
     """
-
-    def find_line(fname, pattern):
-        with open(fname) as search:
-            for line in search:
-                line = line.strip()  # remove '\n' at EOL
-                if pattern in line:
-                    o = line.split()[2:]  # output ss as list
-                    o = [float(i) for i in o]  # convert to float
-                if 'Ref. Prot. Set' in line:
-                    db = line.split()[3]  # split db to get int
-                if 'RMSD(Exp-Calc)' in line and 'NRMSD(Exp-Calc)' not in line:
-                    rmsd = line.split()[1]  # split line to get rmsd
-                    rmsd = float(rmsd)
-                    rmsd = '{:.3f}'.format(rmsd)
-
-        return o, db, rmsd
-
-    def dec_to_percent(n):
-        return n * 100
-
-    def format_val(v):
-        """Takes in float and formats as str with 1 decimal place
-
-        :v: float
-        :returns: str
-
-        """
-        return '{:.1f}%'.format(v)
 
     ibasis_group_1 = {
         'members': ['SP29', 'SP37', 'SP43', 'SDP42', 'SDP48', 'CLSTR', 'SMP50',
@@ -486,6 +499,8 @@ def read_protss_assignment(f):
 
 
 def main():
+    """Docstring for main
+    """
 
     dat, lline = read_aviv(result.cdpro_input, save_line_no=True)
     buf = read_aviv(result.buffer, save_line_no=False, last_line_no=lline)[0]
