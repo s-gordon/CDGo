@@ -500,13 +500,19 @@ def read_protss_assignment(f):
 
 def main():
     """Docstring for main
+
+    :returns: None
     """
 
+    # read in data files for dataset (dat) and reference buffer for subtraction
+    # (buf)
     dat, lline = read_aviv(result.cdpro_input, save_line_no=True)
     buf = read_aviv(result.buffer, save_line_no=False, last_line_no=lline)[0]
 
+    # subtract signal for reference from sample
     df = (dat - buf).dropna()
 
+    # convert into units of mre
     mrc = result.mol_weight / (result.number_residues * result.concentration)
 
     # Convert from the input units of millidegrees to the standard delta
@@ -516,11 +522,14 @@ def main():
 
     # Remap the df index to floats. Required for drop_indices
     epsilon.index = epsilon.index.map(float)
+    # drop bad datapoints
     epsilon = drop_indices(epsilon)
+    # force inverse sorting
+    epsilon = epsilon.sort_index(ascending=False)    # force inverse sorting
 
     head = cdpro_input_header(max, min, 1)
-    body = list(more_itertools.chunked(epsilon[::-1], 10))
-    # body = list(more_itertools.chunked(epsilon[::], 10))
+
+    body = list(more_itertools.chunked(epsilon, 10))
     cdpro_input_writer(body, head)
 
     check_cmd('wine')
