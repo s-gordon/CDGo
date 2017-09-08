@@ -11,7 +11,7 @@ git clone https://github.com/s-gordon/CDGo.git
 Then install CDGo using your favourite python installation (v2.7+):
 
 ```sh
-cd /path/to/cdgo/source 
+cd /path/to/cdgo/source
 python setup.py install
 ```
 
@@ -49,6 +49,15 @@ apt-get install wine
 dnf install wine
 ```
 
+### Windows ###
+
+No installation instructions are provided for Windows. This could potentially be
+extended using Cygwin, but would require configuring a complete Python
+environment as well as the dependencies called for by CDGo.
+
+Alternatively, one could set up a unix-like environment on Windows by using a
+virtual machine (e.g. using VirtualBox).
+
 ## Usage ##
 
 ```sh
@@ -80,11 +89,13 @@ replicate data sets. This will change in the future, but for now you will need
 to either average the input data sets manually or simply remove all but one
 replicate from the input file.
 
-## Who do I talk to? ##
+## Who do I talk to ##
+
 * Shane Gordon
 * Tao Nelson
 
-## Contributors
+## Contributors ##
+
 See contributors.txt
 
 ## Citation ##
@@ -103,10 +114,31 @@ please cite it. The BibTeX reference is as follows:
   journal = {GitHub repository},
   howpublished = {\url{https://github.com/s-gordon/cdgo}},
   }
-
 ```
 
 ### CDPro ###
+
+CDPro is research software. If you make use of CDGo in scientific publications,
+please cite it. The BibTeX reference is as follows:
+
+```
+@article{Sreerama2000CDPro,
+  title = {Estimation of protein secondary structure from circular dichroism
+           spectra: comparison of CONTIN, SELCON, and CDSSTR methods with an
+           expanded reference set},
+  author = {Sreerama, Narasimha and Woody, Robert W},
+  journal = {Analytical biochemistry},
+  volume = {287},
+  number = {2},
+  pages = {252--260},
+  year = {2000},
+  publisher = {Elsevier}
+}
+```
+
+Please refer to the
+[CDPro webpage](http://sites.bmb.colostate.edu/sreeram/CDPro/) for further
+details.
 
 ### CONTINLL ###
 
@@ -117,5 +149,6 @@ please cite it. The BibTeX reference is as follows:
 Generally refer to the website for
 [CDPro](http://sites.bmb.colostate.edu/sreeram/CDPro/).
 
-## Licence
+## Licence ##
+
 See LICENSE.md
