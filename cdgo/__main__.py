@@ -16,7 +16,7 @@ import time
 import matplotlib.pyplot as plt
 import pandas as pd
 import more_itertools
-from readers import compare_ibases
+from readers import read_protss
 
 
 def allowed_ibasis_val(x):
@@ -27,6 +27,24 @@ def allowed_ibasis_val(x):
         )
     sys.exit(2)
     return x
+
+
+def parse_num_list(string):
+    """Docstring for parse_num_list
+
+    :string:
+    :returns: list of integers
+
+    """
+    m = re.match(r'(\d+)(?:-(\d+))?$', string)
+    # ^ (or use .split('-'). anyway you like.)
+    if not m:
+        raise argparse.ArgumentTypeError(
+            "'" + string +
+            "' is not a range of number. Expected forms like '0-5' or '2'.")
+    start = m.group(1)
+    end = m.group(2) or start
+    return list(range(int(start, 10), int(end, 10)+1))
 
 
 # Argparse
@@ -55,6 +73,14 @@ parser.add_argument('--buffer', action="store", required=False,
                     dest="buffer", help="Buffer file for blank.")
 parser.add_argument('--cdsstr', action="store_true", required=False,
                     help="Use CDSSTR algorithm for fitting.")
+parser.add_argument('--db_range', type=parse_num_list,
+                    default="1-10", help="""
+                    CDPro ibasis range to use. Accepted values are
+                    between 1 and 10 inclusive.
+
+                    Acceptable values are ranges (e.g. 2-5) or integers
+                    (e.g. 2).
+                    """)
 parser.add_argument('--continll', action="store_true", required=False,
                     help="""
                     Use CONTINLL algorithm for fitting.
@@ -86,6 +112,28 @@ if result.verbose:
 else:
     logging.basicConfig(format='%(levelname)s:\t%(message)s',
                         level=logging.INFO)
+
+
+def logfile(fname, parser):
+    """Docstring for logfile
+    :fname: output logfile name
+    :parser: argparse parser object
+
+    :returns: None
+    """
+    with open(fname, 'w') as f:
+        f.write(
+            "Logfile for CDGo. See below details of the arguments provided." +
+            "\n\n")
+        f.write('CDPro path: {}\n'.format(parser.cdpro_dir))
+        f.write('Input file: {}\n'.format(parser.cdpro_input))
+        f.write('Protein molecular weight: {}\n'.format(parser.mol_weight))
+        f.write('Number of residues: {}\n'.format(parser.number_residues))
+        f.write('Protein concentration: {}\n'.format(parser.concentration))
+        f.write('Buffer file: {}\n'.format(parser.buffer))
+        f.write('iBasis range: {}\n'.format(parser.db_range))
+        f.write('CONTINLL?: {}\n'.format(parser.continll))
+        f.write('CDSSTR?: {}\n'.format(parser.cdsstr))
 
 
 def read_aviv(f, save_line_no=False, last_line_no=False):
@@ -350,45 +398,14 @@ def millidegrees_to_epsilon(df, mrc):
     return (df * mrc/3298).map(lambda x: '%1.3f' % x)
 
 
-def alg_eval(alg):
-    """TODO
+def better_alg_eval(df):
+    """TODO: Docstring for better_alg_eval.
 
-    alg: algorithm to use for fitting. Acceptable values are "continll" and
-         "cdsstr"
-    returns:
+    :df: TODO
+    :returns: TODO
 
     """
-
-    if alg == "continll":
-        f = 'CONTIN.CD'
-    elif alg == "cdsstr":
-        f = 'reconCD.out'
-
-    protss = compare_ibases(alg)
-    topfit = protss.ix[protss['rmsd'].idxmin()]
-    best_rmsd = topfit['rmsd']
-    best_ibasis = topfit['dset_int']
-    ibasis_dir = topfit['protss'][0:-11]
-
-    # best_rmsd, best_ibasis, ibasis_dir = compare_ibases(alg)
-    logging.info('Best %s RMSD: %s' % (alg, best_rmsd))
-
-    with open('best-%s' % (alg), 'w') as fl:
-        fl.write(str(best_ibasis))
-        fl.close
-
-    logging.info('Best ibasis for %s: %s' % (alg, best_ibasis))
-    plot = '%s/%s' % (ibasis_dir, f)
-    label = '{} ibasis {}: RMSD={}'.format(alg,
-                                           best_ibasis,
-                                           best_rmsd)
-    # outfile = 'CDSpec-{}-{}-best{}.png'.format(
-    #     result.cdpro_input,
-    #     time.strftime("%Y%m%d"),
-    #     alg
-    # )
-    # single_line_scatter(plot, label, 'Exp', ax, outfile=outfile)
-    return plot, label
+    pass
 
 
 def dec_to_percent(n):
@@ -434,68 +451,35 @@ def find_line(fname, pattern):
     return o, db, rmsd
 
 
-def read_protss_assignment(f):
-    """read in ProtSS file from CDPro and parse sec struc assignments
+def best_fit(df, col, ax):
+    """TODO: Docstring for best_fit.
 
-    :f: TODO
-    :ibasis: ibasis reference for ProtSS
+    :df: TODO
+    :col: value for dataframe column 'alg' with which to subsample
     :returns: TODO
-    """
-
-    ibasis_group_1 = {
-        'members': ['SP29', 'SP37', 'SP43', 'SDP42', 'SDP48', 'CLSTR', 'SMP50',
-                    'SMP56'],
-        'ss': ['H(r)', 'H(d)', 'S(r)', 'S(d)', 'Trn', 'Unrd']
-    }
-    ibasis_group_2 = {
-        'members': ['SP22X'],
-        'ss': ['H', '3/10', 'S', 'Turn', 'PP2', 'Unrd']
-    }
-    ibasis_group_3 = {
-        'members': ['SP37A'],
-        'ss': ['H', 'S', 'Turn', 'PP2', 'Unrd']
-    }
 
     """
-    for each ibasis, parse through output and collect secondary structure
-    lines using pattern 'Fractions'. Split output into list, removing the first
-    two (irrelevant) entries.
-    """
-    ss, db, rmsd = find_line(f, 'Fractions')
-    if db in ibasis_group_1['members']:
-        ahelix = format_val(dec_to_percent((ss[0] + ss[1])/np.sum(ss)))
-        bstrand = format_val(dec_to_percent(ss[2] + ss[3])/np.sum(ss))
-        turn = format_val(dec_to_percent(ss[4]/np.sum(ss)))
-        unord = format_val(dec_to_percent(ss[5]/np.sum(ss)))
-        ss = {
-            'ahelix': ahelix,
-            'bstrand': bstrand,
-            'turn': turn,
-            'unord': unord
-        }
-    elif db in ibasis_group_2['members']:
-        ahelix = format_val(dec_to_percent((ss[0] + ss[1])/np.sum(ss)))
-        bstrand = format_val(dec_to_percent(ss[2]/np.sum(ss)))
-        turn = format_val(dec_to_percent(ss[3]/np.sum(ss)))
-        unord = format_val(dec_to_percent((ss[4] + ss[5])/np.sum(ss)))
-        ss = {
-            'ahelix': ahelix,
-            'bstrand': bstrand,
-            'turn': turn,
-            'unord': unord
-        }
-    elif db in ibasis_group_3['members']:
-        ahelix = format_val(dec_to_percent(ss[0]/np.sum(ss)))
-        bstrand = format_val(dec_to_percent(ss[1]/np.sum(ss)))
-        turn = format_val(dec_to_percent(ss[2]/np.sum(ss)))
-        unord = format_val(dec_to_percent((ss[3] + ss[4])/np.sum(ss)))
-        ss = {
-            'ahelix': ahelix,
-            'bstrand': bstrand,
-            'turn': turn,
-            'unord': unord
-        }
-    return ss, db, rmsd
+    if col is 'continll':
+        fit_fname = "CONTIN.CD"
+    elif col is 'cdsstr':
+        fit_fname = 'reconCD.out'
+    else:
+        logging.error("Unknown algorithm reference {} supplied.".format(col))
+        sys.exit(2)
+    # select only rows with alg value equal to col
+    df = df.loc[df['alg'] == col]
+    # select row with lowest rmsd value as top
+    top = df.ix[df['rmsd'].idxmin()]
+    logging.info('best ibasis for {a}: {i}'.format(a=col, i=top.name))
+    # full file name and path for plot file
+    fname = '{a}-ibasis{i}/{f}'.format(a=col, i=top.name, f=fit_fname)
+    # plot label for matplotlib
+    flab = 'continll ibasis {ib} (RMSD: {rmsd})'.format(
+        ib=top.name, rmsd=top['rmsd'])
+    # exp label for matplotlib
+    elab = '{} exp'.format(col)
+    # plot on supplied axis
+    single_line_scatter(fname, flab, elab, ax)
 
 
 def main():
@@ -542,11 +526,14 @@ def main():
     delete_dir(cdpro_out_dir)
     logging.debug('Processing %s into %s' % (result.cdpro_input,
                                              cdpro_out_dir))
+    # log args into to logfile lname
+    lname = '{p}/input.log'.format(p=cdpro_out_dir)
+    logfile(lname, result)
     shutil.copy("input", "%s/input" % (result.cdpro_dir))
     os.chdir(result.cdpro_dir)
-    ss_assignments = pd.DataFrame()
+    ss_assign = pd.DataFrame()
 
-    for ibasis in (range(1, 11)):
+    for ibasis in result.db_range:
 
         logging.info('ibasis %s', ibasis)
 
@@ -556,6 +543,10 @@ def main():
                        'rmsd']
 
         if result.continll is True:
+            """
+            if continll switch is True, run the continll algorithm and pull
+            secondary structure assignments
+            """
             logging.debug('Running CONTINLL')
             subprocess.call(['echo | WINEDEBUG=-all wine Continll.exe > stdout || echo -n "\
                              (crashed)"'], shell=True)
@@ -569,17 +560,23 @@ def main():
                 shutil.move(f, "%s/" % (continll_outdir))
                 if os.path.isfile("input"):
                     shutil.copy("input", "%s/" % (continll_outdir))
-
-            ss, db, rmsd = read_protss_assignment(
-                '{}/ProtSS.out'.format(continll_outdir)
-            )
+            # read in fit values and stats
+            db, int, ss, rmsd = read_protss(
+                '{}/ProtSS.out'.format(continll_outdir))
+            # define new dataframe with output from read_protss
             df = pd.DataFrame(
                 [[db, 'continll', ss['ahelix'], ss['bstrand'], ss['turn'],
                   ss['unord'], rmsd]], index=[ibasis]
+
             )
-            ss_assignments = ss_assignments.append(df)
+            # append fit values and stats to dataframe
+            ss_assign = ss_assign.append(df)
 
         if result.cdsstr is True:
+            """
+            if cdsstr switch is True, run the cdsstr algorithm and pull
+            secondary structure assignments
+            """
             logging.debug('Running CDSSTR')
             subprocess.call(['echo | WINEDEBUG=-all wine CDSSTR.EXE > stdout || echo -n "\
                              (crashed)"'], shell=True)
@@ -592,25 +589,21 @@ def main():
                 shutil.move(f, "%s/" % (cdsstr_outdir))
             if os.path.isfile("input"):
                 shutil.copy("input", "%s/" % (cdsstr_outdir))
-
-            ss, db, rmsd = read_protss_assignment(
-                '{}/ProtSS.out'.format(cdsstr_outdir),
-            )
+            # read in fit values and stats
+            db, int, ss, rmsd = read_protss(
+                '{}/ProtSS.out'.format(cdsstr_outdir))
             df = pd.DataFrame(
                 [[db, 'cdsstr', ss['ahelix'], ss['bstrand'], ss['turn'],
                   ss['unord'], rmsd]], index=[ibasis]
             )
-            ss_assignments = ss_assignments.append(df)
+            # append fit values and stats to dataframe
+            ss_assign = ss_assign.append(df)
 
     os.chdir(cdpro_out_dir)
 
     set_style()
 
-    if result.continll is True:
-        continll_plot, continll_label = alg_eval('continll')
-
-    if result.cdsstr is True:
-        cdsstr_plot, cdsstr_label = alg_eval('cdsstr')
+    ss_assign.columns = ss_col_head
 
     # Print the matplotlib overlay
     logging.debug('Plotting fit overlays')
@@ -621,23 +614,18 @@ def main():
     fig, ax = plt.subplots(nrows=1, ncols=1)
 
     if result.continll is True:
-        single_line_scatter(
-            continll_plot, continll_label, 'CONTINLL Exp', ax
-        )
+        best_fit(ss_assign, 'continll', ax)
 
     if result.cdsstr is True:
-        single_line_scatter(
-            cdsstr_plot, cdsstr_label, 'CDSSTR Exp', ax
-        )
+        best_fit(ss_assign, 'cdsstr', ax)
 
     ax.legend()
     plt.savefig(outfile, bbox_inches='tight')
 
-    ss_assignments.columns = ss_col_head
-    ss_assignments.to_csv(
+    ss_assign.to_csv(
         '{}/secondary_structure_summary.csv'.format(cdpro_out_dir)
     )
-    logging.info('\n{}\n'.format(ss_assignments))
+    logging.info('\n{}\n'.format(ss_assign))
 
 
 if __name__ == '__main__':

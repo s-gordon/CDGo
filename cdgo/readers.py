@@ -2,8 +2,17 @@
 # -*- coding: utf-8 -*-
 
 import re
-import pandas as pd
-from glob import glob
+import numpy as np
+
+
+def format_val(v):
+    """Takes in float and formats as str with 1 decimal place
+
+    :v: float
+    :returns: str
+
+    """
+    return '{:.1f}%'.format(v)
 
 
 def split_string(s):
@@ -19,6 +28,16 @@ def split_string(s):
     return re.split('\s+', s)
 
 
+def dec_to_percent(n):
+    """Docstring for dec_to_percent
+
+    :n: float value or list as fraction
+    :returns: value or list multiplied by 10e2
+    """
+
+    return n * 100
+
+
 def header():
     """Set column headers for reading in CDPro algorithm output files
     :returns: python dict of continll/cdsstr headers
@@ -32,12 +51,11 @@ def header():
     return d
 
 
-def compare_ibases(prefix):
-    """TODO: Docstring for best_ibasis.
+def read_protss(f):
+    """TODO: Docstring for read_protss_new.
 
-    :prefix: string to prepend to the output folders relating to the algorithm.
-             Acceptable values are "continll" or "cdsstr".
-    :returns: TODO
+    :f: protss assignment file output by CONTINLL or CDSSTR
+    :returns: pandas dataframe
 
     """
 
@@ -54,26 +72,74 @@ def compare_ibases(prefix):
         'SMP50': 9,
         'SMP56': 10,
     }
+    """
+    group ibasis datasets according to the style of output secondary
+    structures. Certain structures (e.g. helical elements) are summed.
+    """
+    ibasis_group_1 = {
+        'members': ['SP29', 'SP37', 'SP43', 'SDP42', 'SDP48', 'CLSTR', 'SMP50',
+                    'SMP56'],
+        'ss': ['H(r)', 'H(d)', 'S(r)', 'S(d)', 'Trn', 'Unrd']
+    }
+    ibasis_group_2 = {
+        'members': ['SP22X'],
+        'ss': ['H', '3/10', 'S', 'Turn', 'PP2', 'Unrd']
+    }
+    ibasis_group_3 = {
+        'members': ['SP37A'],
+        'ss': ['H', 'S', 'Turn', 'PP2', 'Unrd']
+    }
 
-    flist = glob('./{}-ibasis*/ProtSS.out'.format(prefix))
-    dset = []
-    dset_int = []
-    rmsd = []
-    for f in flist:
-        with open(f) as fp:
-            for i, line in enumerate(fp):
-                if i == 4:
-                    # ibasis set name
-                    db = split_string(line)[4]
-                    dset.append(db)
-                    if db in refsets.iterkeys():
-                        dset_int.append(refsets[db])
-                elif i == 7:
-                    # rmsd value
-                    qfit = split_string(line)[2]
-                    rmsd.append(float(qfit))
+    # parse protss input file for specific lines relating to fits and sec struc
+    with open(f) as fp:
+        for i, line in enumerate(fp):
+            if i == 4:
+                # ibasis set name
+                dname = split_string(line)[4]
+                if dname in refsets.iterkeys():
+                    d_int = refsets[dname]
+            elif i == 6:
+                # rmsd value
+                ss = split_string(line)[3:-1]
+                ss = [float(num) for num in ss]
+            elif i == 7:
+                # rmsd value
+                qfit = split_string(line)[2]
+                rmsd = (float(qfit))
 
-    d = {'dname': dset, 'dset_int': dset_int, 'rmsd': rmsd, 'protss': flist}
-    df = pd.DataFrame(data=d)
-
-    return df
+    """
+    """
+    if dname in ibasis_group_1['members']:
+        ahelix = format_val(dec_to_percent((ss[0] + ss[1])/np.sum(ss)))
+        bstrand = format_val(dec_to_percent(ss[2] + ss[3])/np.sum(ss))
+        turn = format_val(dec_to_percent(ss[4]/np.sum(ss)))
+        unord = format_val(dec_to_percent(ss[5]/np.sum(ss)))
+        ss = {
+            'ahelix': ahelix,
+            'bstrand': bstrand,
+            'turn': turn,
+            'unord': unord
+        }
+    elif dname in ibasis_group_2['members']:
+        ahelix = format_val(dec_to_percent((ss[0] + ss[1])/np.sum(ss)))
+        bstrand = format_val(dec_to_percent(ss[2]/np.sum(ss)))
+        turn = format_val(dec_to_percent(ss[3]/np.sum(ss)))
+        unord = format_val(dec_to_percent((ss[4] + ss[5])/np.sum(ss)))
+        ss = {
+            'ahelix': ahelix,
+            'bstrand': bstrand,
+            'turn': turn,
+            'unord': unord
+        }
+    elif dname in ibasis_group_3['members']:
+        ahelix = format_val(dec_to_percent(ss[0]/np.sum(ss)))
+        bstrand = format_val(dec_to_percent(ss[1]/np.sum(ss)))
+        turn = format_val(dec_to_percent(ss[2]/np.sum(ss)))
+        unord = format_val(dec_to_percent((ss[3] + ss[4])/np.sum(ss)))
+        ss = {
+            'ahelix': ahelix,
+            'bstrand': bstrand,
+            'turn': turn,
+            'unord': unord
+        }
+    return dname, d_int, ss, rmsd
