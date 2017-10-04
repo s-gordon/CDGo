@@ -478,8 +478,8 @@ def best_fit(df, col, ax):
     # full file name and path for plot file
     fname = '{a}-ibasis{i}/{f}'.format(a=col, i=top.name, f=fit_fname)
     # plot label for matplotlib
-    flab = 'continll ibasis {ib} (RMSD: {rmsd})'.format(
-        ib=top.name, rmsd=top['rmsd'])
+    flab = '{alg} ibasis {ib} (RMSD: {rmsd})'.format(
+        alg=col, ib=top.name, rmsd=top['rmsd'])
     # exp label for matplotlib
     elab = '{} exp'.format(col)
     # plot on supplied axis
@@ -566,7 +566,7 @@ def main():
                                            "continll")
 
             make_dir(continll_outdir)
-            for f in ["CONTIN.CD", "CONTIN.OUT", "%s" % (continll_out),
+            for f in ["CONTIN.CD", "CONTIN.OUT", continll_out,
                       "BASIS.PG", "ProtSS.out", "SUMMARY.PG", "stdout"]:
                 shutil.move(f, "%s/" % (continll_outdir))
                 if os.path.isfile("input"):
@@ -606,7 +606,7 @@ def main():
             make_dir(cdsstr_outdir)
             cdsstr_out = cd_output_style("CDsstr.out", "cdsstr.out", "CDSSTR")
 
-            for f in ["reconCD.out", "ProtSS.out", "%s" % (cdsstr_out),
+            for f in ["reconCD.out", "ProtSS.out", cdsstr_out,
                       "stdout"]:
                 shutil.move(f, "%s/" % (cdsstr_outdir))
             if os.path.isfile("input"):
@@ -636,7 +636,13 @@ def main():
 
     set_style()
 
+    # assign column headings
     ss_assign.columns = ss_col_head
+
+    # round floats to 3 decimal places for certain columns
+    ss_assign.rmsd = ss_assign.rmsd.round(3)
+    ss_assign.ss_res = ss_assign.ss_res.round(3)
+    ss_assign.r2 = ss_assign.r2.round(3)
 
     # Print the matplotlib overlay
     logging.debug('Plotting fit overlays')
