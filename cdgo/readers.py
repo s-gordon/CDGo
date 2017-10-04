@@ -3,6 +3,7 @@
 
 import re
 import numpy as np
+import pandas as pd
 
 
 def format_val(v):
@@ -102,10 +103,10 @@ def read_protss(f):
                 # rmsd value
                 ss = split_string(line)[3:-1]
                 ss = [float(num) for num in ss]
-            elif i == 7:
-                # rmsd value
-                qfit = split_string(line)[2]
-                rmsd = (float(qfit))
+            # elif i == 7:
+            #     # rmsd value
+            #     qfit = split_string(line)[2]
+            #     rmsd = (float(qfit))
 
     """
     """
@@ -142,4 +143,27 @@ def read_protss(f):
             'turn': turn,
             'unord': unord
         }
-    return dname, d_int, ss, rmsd
+    # return dname, d_int, ss, rmsd
+    return dname, d_int, ss
+
+
+def read_continll(f):
+    """TODO: Docstring for read_continll.
+
+    :f: TODO
+    :returns: pandas dataframe
+
+    """
+    df = pd.read_csv(f, sep=r"\s*", engine='python', index_col='WaveL')
+    return df
+
+
+def read_cdsstr(f):
+    """TODO: Docstring for read_continll.
+
+    :f: file name
+    :returns: pandas dataframe
+
+    """
+    df = pd.read_csv(f, sep=r"\s*", engine='python', index_col='WaveL')
+    return df

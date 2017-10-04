@@ -16,7 +16,12 @@ import time
 import matplotlib.pyplot as plt
 import pandas as pd
 import more_itertools
+from mathops import sum_squares_residuals
+from mathops import r_squared
+from mathops import rms_error
 from readers import read_protss
+from readers import read_continll
+from readers import read_cdsstr
 
 
 def allowed_ibasis_val(x):
@@ -323,7 +328,6 @@ def single_line_scatter(datafile, fit_label, exp_label, ax,
     df.plot(x=x_col_name, y=calc_col, style='-', ax=ax, label=fit_label)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
-    # plt.savefig(outfile, bbox_inches='tight')
 
 
 def cdpro_input_writer(body, head, fname='input'):
@@ -488,6 +492,12 @@ def main():
     :returns: None
     """
 
+    # shell commands for continll and cdsstr
+    continll_cmd = ('echo | WINEDEBUG=-all wine Continll.exe > stdout || '
+                    'echo -n "(crashed)"')
+    cdsstr_cmd = ('echo | WINEDEBUG=-all wine CDSSTR.EXE > stdout || '
+                  '"echo -n (crashed)"')
+
     # read in data files for dataset (dat) and reference buffer for subtraction
     # (buf)
     dat, lline = read_aviv(result.cdpro_input, save_line_no=True)
@@ -540,7 +550,7 @@ def main():
         replace_input('input', 'input', ibasis)
 
         ss_col_head = ['ibasis', 'alg', 'ahelix', 'bstrand', 'turn', 'unord',
-                       'rmsd']
+                       'rmsd', 'ss_res', 'r2']
 
         if result.continll is True:
             """
@@ -548,12 +558,13 @@ def main():
             secondary structure assignments
             """
             logging.debug('Running CONTINLL')
-            subprocess.call(['echo | WINEDEBUG=-all wine Continll.exe > stdout || echo -n "\
-                             (crashed)"'], shell=True)
+            subprocess.call([continll_cmd], shell=True)
+
             continll_outdir = ('%s/continll-ibasis%s' % (cdpro_out_dir,
                                                          ibasis))
             continll_out = cd_output_style("CONTINLL.OUT", "continll.out",
                                            "continll")
+
             make_dir(continll_outdir)
             for f in ["CONTIN.CD", "CONTIN.OUT", "%s" % (continll_out),
                       "BASIS.PG", "ProtSS.out", "SUMMARY.PG", "stdout"]:
@@ -561,12 +572,24 @@ def main():
                 if os.path.isfile("input"):
                     shutil.copy("input", "%s/" % (continll_outdir))
             # read in fit values and stats
-            db, int, ss, rmsd = read_protss(
+            db, int, ss = read_protss(
                 '{}/ProtSS.out'.format(continll_outdir))
+
+            """
+            read in continll output
+            returns stats about fit such as rms error, sum-of-squares
+            residuals, etc
+            """
+            p = read_continll('{}/CONTIN.CD'.format(continll_outdir))
+            ss_res = sum_squares_residuals(p['CalcCD'], p['ExpCD'])
+            r2 = r_squared(p['CalcCD'], p['ExpCD'])
+            rmsd = rms_error(p['CalcCD'], p['ExpCD'])
+
             # define new dataframe with output from read_protss
             df = pd.DataFrame(
                 [[db, 'continll', ss['ahelix'], ss['bstrand'], ss['turn'],
-                  ss['unord'], rmsd]], index=[ibasis]
+                  ss['unord'], rmsd, ss_res, r2]],
+                index=[ibasis]
 
             )
             # append fit values and stats to dataframe
@@ -578,8 +601,7 @@ def main():
             secondary structure assignments
             """
             logging.debug('Running CDSSTR')
-            subprocess.call(['echo | WINEDEBUG=-all wine CDSSTR.EXE > stdout || echo -n "\
-                             (crashed)"'], shell=True)
+            subprocess.call([cdsstr_cmd], shell=True)
             cdsstr_outdir = ('%s/cdsstr-ibasis%s' % (cdpro_out_dir, ibasis))
             make_dir(cdsstr_outdir)
             cdsstr_out = cd_output_style("CDsstr.out", "cdsstr.out", "CDSSTR")
@@ -590,11 +612,22 @@ def main():
             if os.path.isfile("input"):
                 shutil.copy("input", "%s/" % (cdsstr_outdir))
             # read in fit values and stats
-            db, int, ss, rmsd = read_protss(
+            db, int, ss = read_protss(
                 '{}/ProtSS.out'.format(cdsstr_outdir))
+
+            """
+            read in continll output
+            returns stats about fit such as rms error, sum-of-squares
+            residuals, etc
+            """
+            p = read_cdsstr('{}/reconCD.out'.format(cdsstr_outdir))
+            ss_res = sum_squares_residuals(p['CalcCD'], p['Exptl'])
+            r2 = r_squared(p['CalcCD'], p['Exptl'])
+            rmsd = rms_error(p['CalcCD'], p['Exptl'])
+
             df = pd.DataFrame(
                 [[db, 'cdsstr', ss['ahelix'], ss['bstrand'], ss['turn'],
-                  ss['unord'], rmsd]], index=[ibasis]
+                  ss['unord'], rmsd, ss_res, r2]], index=[ibasis]
             )
             # append fit values and stats to dataframe
             ss_assign = ss_assign.append(df)
