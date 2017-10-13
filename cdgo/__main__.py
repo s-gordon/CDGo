@@ -23,6 +23,27 @@ from readers import read_protss
 from readers import read_continll
 from readers import read_cdsstr
 
+notes = (
+    "\n"
+    "CDGo is research software. If you use CDGo in your research, please \n"
+    "acknowledge it appropriately. E.g.:\n"
+    "\t...using the software package CDPro (Sreerama and Woody, 2000) as \n"
+    "\timplemented by the software package CDGo \n"
+    '\t(available from https://github.com/s-gordon/CDGo)\n\n'
+    'Any use of CDGo in research should also cite the software package\n'
+    'CDPro (found http://sites.bmb.colostate.edu/sreeram/CDPro/):\n'
+    '\tSreerama, N., & Woody, R. W. (2000). Estimation of protein \n'
+    '\tsecondary structure from circular dichroism spectra: comparison of \n'
+    '\tCONTIN, SELCON, and CDSSTR methods with an expanded reference set. \n'
+    '\tAnalytical biochemistry, 287(2), 252-260.\n\n'
+    'Use of individual protein reference databases should also be credited\n'
+    'appropriately. For a full listing of each database and the \n'
+    'appropriate citation, please use the following link:\n'
+    '\thttp://sites.bmb.colostate.edu/sreeram/CDPro/\n'
+)
+
+print notes
+
 
 def allowed_ibasis_val(x):
     x = int(x)
