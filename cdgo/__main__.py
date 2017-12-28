@@ -9,6 +9,7 @@ import sys
 import logging
 import argparse
 import subprocess
+from datetime import datetime
 import numpy as np
 import shutil
 import seaborn as sns
@@ -41,6 +42,7 @@ notes = (
     'appropriate citation, please use the following link:\n'
     '\thttp://sites.bmb.colostate.edu/sreeram/CDPro/\n'
 )
+now = datetime.now()
 
 print notes
 
@@ -151,6 +153,8 @@ def logfile(fname, parser):
         f.write(
             "Logfile for CDGo. See below details of the arguments provided." +
             "\n\n")
+        f.write(notes + "\n\n")
+        f.write('Date: {}\n'.format(now.strftime("%Y-%m-%d %H:%M")))
         f.write('CDPro path: {}\n'.format(parser.cdpro_dir))
         f.write('Input file: {}\n'.format(parser.cdpro_input))
         f.write('Protein molecular weight: {}\n'.format(parser.mol_weight))
@@ -162,6 +166,22 @@ def logfile(fname, parser):
         f.write('CDSSTR?: {}\n'.format(parser.cdsstr))
 
 
+def read_line(f, line_no):
+    """TODO: Docstring for read_line.
+
+    :f: file name
+    :line_no: single line number to read
+    :returns: line
+
+    """
+
+    with open(f) as fp:
+        for i, line in enumerate(fp):
+            if i == line_no:
+                l = line
+    return l
+
+
 def read_aviv(f, save_line_no=False, last_line_no=False):
     """Wrapper function to read in raw Aviv CD data files
 
@@ -169,6 +189,26 @@ def read_aviv(f, save_line_no=False, last_line_no=False):
     :returns: TODO
 
     """
+
+    # check file summary for experiment type
+    # if the exp type is not wavelength, throw an error and exit
+    exp_type = read_line(f, 1)
+    # delimit with colon + space
+    exp_type = exp_type.split(': ')[1]
+    # remove trailing newlines and carriage returns
+    exp_type = exp_type.rstrip("\r\n")
+    if exp_type != "Wavelength":
+        logging.error(
+            ("The experiment type for one or more of input files is {e}.\n"
+             "Only wavelength experiments are allowed at this time. Please\n"
+             "check your inputs and try again."
+             ).format(e=exp_type)
+        )
+        sys.exit(2)
+    else:
+        logging.debug(
+            "Experiment type for file {f} is {e}.".format(f=f, e=exp_type)
+        )
 
     df = pd.read_csv(f, sep='  ', skiprows=18, header=0, engine='python')
     if last_line_no is False:
@@ -317,9 +357,15 @@ def list_params(df):
     :returns: list max, min, and step size of the pandas indices
     """
     df = df.index.astype(float)
-    max = df.max()
-    min = df.min()
-    step = df[-1] - df[-2]
+    try:
+        max = df.max()
+        min = df.min()
+        step = df[-1] - df[-2]
+    except IndexError:
+        logging.error(
+            "Bad input data. Please check that data is correctly formatted"
+        )
+        sys.exit(2)
     return min, max, step
 
 
