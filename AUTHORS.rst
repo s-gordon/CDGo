@@ -6,6 +6,7 @@ Development Lead
 ----------------
 
 * Shane Eric Gordon <segordon.public@gmail.com>
+* Tao Nelson (original author)
 
 Contributors
 ------------
