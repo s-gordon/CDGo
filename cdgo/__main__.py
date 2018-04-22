@@ -574,7 +574,8 @@ def main():
     df = (dat - buf).dropna()
 
     # convert into units of mre
-    mrc = result.mol_weight / (result.number_residues * result.concentration)
+    pep_bonds = result.number_residues - 1
+    mrc = result.mol_weight / (pep_bonds * result.concentration)
 
     # Convert from the input units of millidegrees to the standard delta
     # epsilon
