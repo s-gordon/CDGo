@@ -92,7 +92,7 @@ replicate from the input file.
 ## Who do I talk to ##
 
 * Shane Gordon
-* Tao Nelson
+* Tao Nelson (original author)
 
 ## Contributors ##
 
