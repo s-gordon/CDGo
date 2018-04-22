@@ -121,7 +121,7 @@ please cite it. The BibTeX reference is as follows:
 CDPro is research software. If you make use of CDGo in scientific publications,
 please cite it. The BibTeX reference is as follows:
 
-```
+```bib
 @article{Sreerama2000CDPro,
   title = {Estimation of protein secondary structure from circular dichroism
            spectra: comparison of CONTIN, SELCON, and CDSSTR methods with an
@@ -142,7 +142,71 @@ details.
 
 ### CONTINLL ###
 
+```bib
+@article{Provencher:81,
+   doi         = {10.1021/bi00504a006},
+   url         = {https://doi.org/10.1021%2Fbi00504a006},
+   year        = 1981,
+   month       = {1},
+   publisher   = {American Chemical Society ({ACS})},
+   volume      = {20},
+   number      = {1},
+   pages       = {33--37},
+   author      = {Stephen W. Provencher and Juergen Gloeckner},
+   title       = {Estimation of globular protein secondary structure from
+                  circular dichroism},
+   journal     = {Biochemistry}
+}
+
+@article{van_Stokkum:90,
+   doi         = {10.1016/0003-2697(90)90396-q},
+   url         = {https://doi.org/10.1016%2F0003-2697%2890%2990396-q},
+   year        = 1990,
+   month       = {11},
+   publisher   = {Elsevier {BV}},
+   volume      = {191},
+   number      = {1},
+   pages       = {110--118},
+   author      = {Ivo H.M. van Stokkum and Hans J.W. Spoelder and Michael
+                  Bloemendal and Rienk van Grondelle and Frans C.A. Groen},
+   title       = {Estimation of protein secondary structure and error analysis
+                  from circular dichroism spectra},
+   journal     = {Anal Biochem}
+}
+
+```
+
 ### CDSSTR ###
+
+```bib
+@article{Sreerama:00,
+   doi         = {10.1006/abio.2000.4880},
+   url         = {https://doi.org/10.1006%2Fabio.2000.4880},
+   year        = 2000,
+   month       = {12},
+   publisher   = {Elsevier {BV}},
+   volume      = {287},
+   number      = {2},
+   pages       = {252--260},
+   author      = {Narasimha Sreerama and Robert W. Woody},
+   title       = {Estimation of Protein Secondary Structure from Circular
+                  Dichroism Spectra: Comparison of {CONTIN}, {SELCON}, and
+                  {CDSSTR} Methods with an Expanded Reference Set},
+   journal     = {Anal Biochem}
+}
+
+@article{Johnson:99,
+   title       = {Analyzing protein circular dichroism spectra for accurate
+                  secondary structures},
+   author      = {Johnson, W Curtis},
+   journal     = {Proteins: Struct, Funct, Bioinf},
+   volume      = {35},
+   number      = {3},
+   pages       = {307--312},
+   year        = {1999},
+   publisher   = {Wiley Online Library}
+}
+```
 
 ### Everything Else ###
 
