@@ -155,6 +155,7 @@ def logfile(fname, parser):
             "\n\n")
         f.write(notes + "\n\n")
         f.write('Date: {}\n'.format(now.strftime("%Y-%m-%d %H:%M")))
+        f.write('CDGo Version: {}\n'.format(cdgo.__version__))
         f.write('CDPro path: {}\n'.format(parser.cdpro_dir))
         f.write('Input file: {}\n'.format(parser.cdpro_input))
         f.write('Protein molecular weight: {}\n'.format(parser.mol_weight))
