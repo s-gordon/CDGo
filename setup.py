@@ -25,7 +25,7 @@ test_requirements = [
 
 setup(
     name='cdgo',
-    version='0.1.0a0',
+    version='0.3a',
     description=("A Framework for Analysing Circular Dichroism Spectroscopy "
                  "Data Using CDPro"),
     long_description=readme + '\n\n' + history,
