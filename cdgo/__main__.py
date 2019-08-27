@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import more_itertools
 import StringIO
+import cdgo
 from mathops import sum_squares_residuals
 from mathops import r_squared
 from mathops import rms_error
