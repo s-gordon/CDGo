@@ -64,3 +64,13 @@ def r_squared(calc, obs):
     ss_res = sum_squares_residuals(calc, obs)
     ss_tot = sum_squares_total(calc, obs)
     return 1 - (ss_res / ss_tot)
+
+
+def millidegrees_to_epsilon(df, mrc):
+    """TODO
+
+    df: single column pandas dataframe
+    mrc: mean residue concentration conversion factor
+    returns:
+    """
+    return (df * mrc/3298).map(lambda x: '%1.3f' % x)

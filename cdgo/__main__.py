@@ -22,6 +22,7 @@ import cdgo
 from mathops import sum_squares_residuals
 from mathops import r_squared
 from mathops import rms_error
+from mathops import millidegrees_to_epsilon
 from readers import read_protss
 from readers import read_continll
 from readers import read_cdsstr
@@ -31,7 +32,6 @@ notes = (
     "CDGo is research software. If you use CDGo in your research, please \n"
     "acknowledge it appropriately. E.g.:\n"
     "\t...using the software package CDPro (Sreerama and Woody, 2000) as \n"
-    "\timplemented by the software package CDGo \n"
     '\t(available from https://github.com/s-gordon/CDGo)\n\n'
     'Any use of CDGo in research should also cite the software package\n'
     'CDPro (found http://sites.bmb.colostate.edu/sreeram/CDPro/):\n'
@@ -47,16 +47,6 @@ notes = (
 now = datetime.now()
 
 print notes
-
-
-def allowed_ibasis_val(x):
-    x = int(x)
-    if 1 < x > 10:
-        raise argparse.ArgumentTypeError(
-            "Acceptable ibases are between 1 and 10"
-        )
-    sys.exit(2)
-    return x
 
 
 def parse_num_list(string):
@@ -171,7 +161,6 @@ def logfile(fname, parser, **kwargs):
             f.write('{}: {}\n'.format(key, value))
 
 
-
 def read_line(f, line_no):
     """TODO: Docstring for read_line.
 
@@ -186,53 +175,6 @@ def read_line(f, line_no):
             if i == line_no:
                 l = line
     return l
-
-
-def read_aviv(f, save_line_no=False, last_line_no=False):
-    """Wrapper function to read in raw Aviv CD data files
-
-    :f: TODO
-    :returns: TODO
-
-    """
-
-    # check file summary for experiment type
-    # if the exp type is not wavelength, throw an error and exit
-    exp_type = read_line(f, 1)
-    # delimit with colon + space
-    exp_type = exp_type.split(': ')[1]
-    # remove trailing newlines and carriage returns
-    exp_type = exp_type.rstrip("\r\n")
-    if exp_type != "Wavelength":
-        logging.error(
-            ("The experiment type for one or more of input files is {e}.\n"
-             "Only wavelength experiments are allowed at this time. Please\n"
-             "check your inputs and try again."
-             ).format(e=exp_type)
-        )
-        sys.exit(2)
-    else:
-        logging.debug(
-            "Experiment type for file {f} is {e}.".format(f=f, e=exp_type)
-        )
-
-    df = pd.read_csv(f, sep='  ', skiprows=18, header=0, engine='python')
-    if last_line_no is False:
-        line_no = df[df['X'].str.contains("\$ENDDATA")].index.tolist()
-        line_no = line_no[0]
-    else:
-        line_no = last_line_no
-    df = df.iloc[0:line_no]
-
-    # Subsample the resulting dataframe to exclude irrelevant cols
-    df = df[['X', 'CD_Signal', 'CD_Dynode']]
-
-    # Set row names (indices) to col X (i.e. wavelength)
-    df = df.set_index('X')
-
-    # Throw away data when the dynode voltage peaks beyond 600
-    df = df[(df.CD_Dynode < 600)]
-    return df, line_no if save_line_no is True else df
 
 
 def read_multi_aviv(f):
@@ -339,7 +281,7 @@ def set_style():
     sns.set(style="darkgrid")
 
 
-def cdpro_input_header(firstvalue, lastvalue, factor):
+def cdpro_input_header(firstvalue, lastvalue):
     """
     :returns: Multiline string mimicking cdpro output
 
@@ -428,14 +370,6 @@ def cd_output_style(style_1, style_2, algorithm):
         sys.exit(2)
 
 
-def chunks(l, n):
-    """
-    Yield successive n-sized chunks from l.
-    """
-    for i in xrange(0, len(l), n):
-        yield l[i:i + n]
-
-
 def list_params(df):
     """Get key list params.
 
@@ -455,16 +389,14 @@ def list_params(df):
     return min, max, step
 
 
-def single_line_scatter(datafile, fit_label, exp_label, ax,
-                        flip=True, x_col_name='WaveL',
-                        calc_col='CalcCD', xlabel='Wavelength (nm)',
-                        ylabel='$\Delta\epsilon$ ($M^{-1}{\cdot}cm^{-1}$)'):
+def single_line_scatter(datafile, fit_label, ax, flip=True, x_col_name='WaveL',
+                        calc_col='CalcCD'):
     """Docstring for single_line_scatter
 
     """
 
-    df = pd.read_table(datafile, skipinitialspace=True, sep=r"\s*",
-                       engine='python')
+    df = pd.read_csv(datafile, skipinitialspace=True, sep=r"\s*",
+                     engine='python')
 
     # Invert data vertically to compensate for CDPro output
     if flip is True:
@@ -492,30 +424,6 @@ def cdpro_input_writer(body, head, fname='input'):
     f.close()
 
 
-def double_line_scatter(datafile1, datafile2, fit_label1, fit_label2,
-                        exp_label,
-                        df1_headers, df2_headers, outfile='output.png',
-                        flip=True, xlabel='Wavelength (nm)',
-                        ylabel='$\Delta\epsilon$ ($M^{-1}{\cdot}cm^{-1}$)'):
-    fig, ax = plt.subplots(nrows=1, ncols=1)
-    df1 = pd.read_table(datafile1, skipinitialspace=True, sep=r"\s*",
-                        engine='python', usecols=df1_headers)
-    df2 = pd.read_table(datafile2, skipinitialspace=True, sep=r"\s*",
-                        engine='python', usecols=df2_headers)
-
-    # Invert data vertically to compensate for CDPro output
-    if flip is True:
-        df1 = df1.iloc[::-1]
-        df2 = df2.iloc[::-1]
-
-    df1.plot(x='WaveL', y='ExpCD', style='o', ax=ax, label=exp_label)
-    df1.plot(x='WaveL', y='CalcCD', style='-', ax=ax, label=fit_label1)
-    df2.plot(x='WaveL', y='CalcCD', style='-', ax=ax, label=fit_label2)
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
-    plt.savefig(outfile, bbox_inches='tight')
-
-
 def drop_indices(df):
     """TODO: Docstring for drop_indices.
 
@@ -535,69 +443,6 @@ def drop_indices(df):
     return df
 
 
-def millidegrees_to_epsilon(df, mrc):
-    """TODO
-
-    df: single column pandas dataframe
-    mrc: mean residue concentration conversion factor
-    returns:
-    """
-    return (df * mrc/3298).map(lambda x: '%1.3f' % x)
-
-
-def better_alg_eval(df):
-    """TODO: Docstring for better_alg_eval.
-
-    :df: TODO
-    :returns: TODO
-
-    """
-    pass
-
-
-def dec_to_percent(n):
-    """Docstring for dec_to_percent
-
-    :n: float value or list as fraction
-    :returns: value or list multiplied by 10e2
-    """
-
-    return n * 100
-
-
-def format_val(v):
-    """Takes in float and formats as str with 1 decimal place
-
-    :v: float
-    :returns: str
-
-    """
-    return '{:.1f}%'.format(v)
-
-
-def find_line(fname, pattern):
-    """Docstring for find_line
-
-    :fname: file name
-    :pattern:
-    :returns:
-
-    """
-    with open(fname) as search:
-        for line in search:
-            line = line.strip()  # remove '\n' at EOL
-            if pattern in line:
-                o = line.split()[2:]  # output ss as list
-                o = [float(i) for i in o]  # convert to float
-            if 'Ref. Prot. Set' in line:
-                db = line.split()[3]  # split db to get int
-            if 'RMSD(Exp-Calc)' in line and 'NRMSD(Exp-Calc)' not in line:
-                rmsd = line.split()[1]  # split line to get rmsd
-                rmsd = float(rmsd)
-                rmsd = '{:.3f}'.format(rmsd)
-    return o, db, rmsd
-
-
 def best_fit(df, col, ax):
     """TODO: Docstring for best_fit.
 
@@ -606,9 +451,9 @@ def best_fit(df, col, ax):
     :returns: TODO
 
     """
-    if col is 'continll':
+    if col == 'continll':
         fit_fname = "CONTIN.CD"
-    elif col is 'cdsstr':
+    elif col == 'cdsstr':
         fit_fname = 'reconCD.out'
     else:
         logging.error("Unknown algorithm reference {} supplied.".format(col))
@@ -623,10 +468,8 @@ def best_fit(df, col, ax):
     # plot label for matplotlib
     flab = '{alg} ibasis {ib} (RMSD: {rmsd})'.format(
         alg=col, ib=top.name, rmsd=top['rmsd'])
-    # exp label for matplotlib
-    elab = '{} exp'.format(col)
     # plot on supplied axis
-    single_line_scatter(fname, flab, elab, ax)
+    single_line_scatter(fname, flab, ax)
 
 
 def main():
@@ -673,7 +516,7 @@ def main():
     # drop bad datapoints
     epsilon_ints = drop_indices(epsilon)
 
-    head = cdpro_input_header(max, min, 1)
+    head = cdpro_input_header(max, min)
 
     body = list(more_itertools.chunked(epsilon_ints["ave"], 10))
     cdpro_input_writer(body, head)
@@ -802,7 +645,7 @@ def main():
     outfile = 'CDSpec-{}-{}-Overlay.png'.format(
         result.cdpro_input, time.strftime("%Y%m%d"))
 
-    fig, ax = plt.subplots(nrows=1, ncols=1)
+    ax = plt.subplots(nrows=1, ncols=1)[1]
 
     if result.continll is True:
         best_fit(ss_assign, 'continll', ax)
