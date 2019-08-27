@@ -17,6 +17,7 @@ import time
 import matplotlib.pyplot as plt
 import pandas as pd
 import more_itertools
+import StringIO
 from mathops import sum_squares_residuals
 from mathops import r_squared
 from mathops import rms_error
@@ -142,7 +143,7 @@ else:
                         level=logging.INFO)
 
 
-def logfile(fname, parser):
+def logfile(fname, parser, **kwargs):
     """Docstring for logfile
     :fname: output logfile name
     :parser: argparse parser object
@@ -165,6 +166,9 @@ def logfile(fname, parser):
         f.write('iBasis range: {}\n'.format(parser.db_range))
         f.write('CONTINLL?: {}\n'.format(parser.continll))
         f.write('CDSSTR?: {}\n'.format(parser.cdsstr))
+        for key, value in kwargs.items():
+            f.write('{}: {}\n'.format(key, value))
+
 
 
 def read_line(f, line_no):
@@ -228,6 +232,86 @@ def read_aviv(f, save_line_no=False, last_line_no=False):
     # Throw away data when the dynode voltage peaks beyond 600
     df = df[(df.CD_Dynode < 600)]
     return df, line_no if save_line_no is True else df
+
+
+def read_multi_aviv(f):
+    """Wrapper function to read in raw Aviv CD data files
+
+    :f: TODO
+    :returns: TODO
+
+    """
+
+    # check file summary for experiment type
+    # if the exp type is not wavelength, throw an error and exit
+    exp_type = read_line(f, 1)
+    # delimit with colon + space
+    exp_type = exp_type.split(': ')[1]
+    # remove trailing newlines and carriage returns
+    exp_type = exp_type.rstrip("\r\n")
+    if exp_type != "Wavelength":
+        logging.error(
+            ("The experiment type for one or more of input files is {e}.\n"
+             "Only wavelength experiments are allowed at this time. Please\n"
+             "check your inputs and try again."
+             ).format(e=exp_type)
+        )
+        sys.exit(2)
+    else:
+        logging.debug(
+            "Experiment type for file {f} is {e}.".format(f=f, e=exp_type)
+        )
+
+    # read data into buffer
+    stream = open(f, 'r')
+    # dos 2 linux format. change carriage returns
+    input = stream.read().replace('\r\n', '\n')
+
+    # regex find exp data components and assign to new var d
+    d = re.findall(
+        "(?<=\$MDCDATA).*?(?=\$MDCNAME)|(?<=\$MDCDATA).*?(?=\$ENDDATA)",
+        input, re.DOTALL)
+
+    # create new list and populate it with processed aviv data
+    # each data set is an item in the new list
+    ds_list = []
+    for ds in d:
+        ds_list.append(aviv_raw_input_to_pandas(ds))
+    result = pd.concat([i for i in ds_list], axis=1, sort=False, names=[1, 2])
+    result.columns = ["Set{}".format(idx) for idx in range(len(d))]
+
+    # record number reps in new dataframe
+    nreps = len(d)
+
+    # drop any wavelengths not present in all data sets
+    result = result.dropna()
+
+    # calculate average and std. Append as new cols.
+    result["ave"] = result.mean(axis=1)
+    result["std"] = result.std(axis=1)
+    result.nreps = nreps
+
+    return result
+
+
+def aviv_raw_input_to_pandas(input):
+    """TODO: Docstring for aviv_raw_input_conv.
+
+    :input: aviv output as string. One dataset per string.
+    :returns: pandas dataframe containing aviv data
+
+    """
+    # read input to dataframe, delimiting with spaces
+    # discard first line, containing config jargon
+    df = pd.read_csv(StringIO.StringIO(input), sep="  ", skiprows=1,
+                     header=0, engine="python")
+    # Set row names (indices) to col X (i.e. wavelength)
+    df = df.set_index('X')
+    # Throw away data when the dynode voltage peaks beyond 600
+    # Dynode voltage cutoff as CLI flag?
+    df = df[(df.CD_Dynode < 600)]
+    # Subsample the resulting dataframe to exclude irrelevant cols
+    return df[['CD_Signal']]
 
 
 def replace_input(input, output, ibasis):
@@ -385,17 +469,7 @@ def single_line_scatter(datafile, fit_label, exp_label, ax,
     if flip is True:
         df = df.iloc[::-1]
 
-    try:
-        df.plot(x=x_col_name, y='ExpCD', style='.', ax=ax, label=exp_label)
-    except KeyError:
-        try:
-            df.plot(x=x_col_name, y='Exptl', style='.', ax=ax, label=exp_label)
-        except KeyError as e:
-            logging.error(e)
-
     df.plot(x=x_col_name, y=calc_col, style='-', ax=ax, label=fit_label)
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
 
 
 def cdpro_input_writer(body, head, fname='input'):
@@ -568,11 +642,16 @@ def main():
 
     # read in data files for dataset (dat) and reference buffer for subtraction
     # (buf)
-    dat, lline = read_aviv(result.cdpro_input, save_line_no=True)
-    buf = read_aviv(result.buffer, save_line_no=False, last_line_no=lline)[0]
+    dat = read_multi_aviv(result.cdpro_input)
+    buf = read_multi_aviv(result.buffer)
+
+    logging.debug("Replicates in sample dataset: {}".format(dat.nreps))
+    logging.debug("Replicates in reference dataset: {}".format(buf.nreps))
 
     # subtract signal for reference from sample
-    df = (dat - buf).dropna()
+    df = (dat["ave"] - buf["ave"])
+    # drop mismatched wavelengths
+    df = df.dropna()
 
     # convert into units of mre
     pep_bonds = result.number_residues - 1
@@ -580,19 +659,22 @@ def main():
 
     # Convert from the input units of millidegrees to the standard delta
     # epsilon
-    epsilon = millidegrees_to_epsilon(df['CD_Signal'], mrc)
-    max, min, step = list_params(epsilon)
+    epsilon = pd.concat(
+        [millidegrees_to_epsilon(df, mrc),
+         millidegrees_to_epsilon(dat["std"], mrc)], axis=1).dropna()
+
+    max, min, step = list_params(epsilon["ave"])
 
     # Remap the df index to floats. Required for drop_indices
     epsilon.index = epsilon.index.map(float)
-    # drop bad datapoints
-    epsilon = drop_indices(epsilon)
     # force inverse sorting
     epsilon = epsilon.sort_index(ascending=False)    # force inverse sorting
+    # drop bad datapoints
+    epsilon_ints = drop_indices(epsilon)
 
     head = cdpro_input_header(max, min, 1)
 
-    body = list(more_itertools.chunked(epsilon, 10))
+    body = list(more_itertools.chunked(epsilon_ints["ave"], 10))
     cdpro_input_writer(body, head)
 
     check_cmd('wine')
@@ -607,7 +689,7 @@ def main():
                                              cdpro_out_dir))
     # log args into to logfile lname
     lname = '{p}/input.log'.format(p=cdpro_out_dir)
-    logfile(lname, result)
+    logfile(lname, result, reps_sample=dat.nreps, reps_reference=buf.nreps)
     shutil.copy("input", "%s/input" % (result.cdpro_dir))
     os.chdir(result.cdpro_dir)
     ss_assign = pd.DataFrame()
@@ -727,8 +809,19 @@ def main():
     if result.cdsstr is True:
         best_fit(ss_assign, 'cdsstr', ax)
 
+    epsilon["ave"] = epsilon["ave"].astype(float)
+    epsilon["std"] = epsilon["std"].astype(float)
+    epsilon["wl"] = epsilon.index
+
+    epsilon.plot.scatter(ax=ax, x="wl", y="ave", yerr="std", label="exp",
+                         color="black")
+    ax.set_xlabel('Wavelength (nm)')
+    ax.set_ylabel('$\Delta\epsilon$ ($M^{-1}{\cdot}cm^{-1}$)')
     ax.legend()
     plt.savefig(outfile, bbox_inches='tight')
+
+    # save epsilon-format exp data to csv file for later plotting
+    epsilon.to_csv('{}/exp_data_delta_epsilon.csv'.format(cdpro_out_dir))
 
     ss_assign.to_csv(
         '{}/secondary_structure_summary.csv'.format(cdpro_out_dir)
