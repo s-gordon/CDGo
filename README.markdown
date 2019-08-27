@@ -77,17 +77,20 @@ format `<input>-CDPro`.
 
 ### Input files with replicates ###
 
-In the case where any input files from Aviv machines are passed to `CDGo`, it
-will throw an error along the lines of:
+~~In the case where any input files from Aviv machines are passed to `CDGo`, it
+will throw an error along the lines of:~~
 
 ```sh
 IndexError: index -1 is out of bounds for axis 0 with size 0
 ```
 
-This is expected, and results from `CDGo` currently being unable to handle
+~~This is expected, and results from `CDGo` currently being unable to handle
 replicate data sets. This will change in the future, but for now you will need
 to either average the input data sets manually or simply remove all but one
-replicate from the input file.
+replicate from the input file.~~
+
+Support for multi-scan Aviv files was added in release v0.4a. Scans are
+automatically averaged and standard deviation reported.
 
 ## Who do I talk to ##
 

@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-# AUTHOR:   Shane Gordon
-# ROLE:     TODO (some explanation)
-# CREATED:  2015-06-06 13:12:10
 
 import os
 import re
@@ -81,7 +78,8 @@ parser.add_argument('-C', action="store", dest="cdpro_dir",
                     default="/Users/sgordon/.wine/drive_c/Program Files/CDPro",
                     help="CDPro executable directory")
 parser.add_argument('-i', action="store", dest="cdpro_input",
-                    required=True, help="CDPro executable directory")
+                    required=True, help="Aviv-format protein sample CD \
+                    spectra file.")
 parser.add_argument('--mol_weight', action="store", required=True,
                     type=float,
                     help="Molecular weight (Da)")
@@ -92,7 +90,17 @@ parser.add_argument('--concentration', action="store", required=True,
 parser.add_argument('--buffer', action="store", required=False,
                     dest="buffer", help="Buffer file for blank.")
 parser.add_argument('--cdsstr', action="store_true", required=False,
-                    help="Use CDSSTR algorithm for fitting.")
+                    help="""
+                    Use CDSSTR algorithm for fitting.
+
+                    If you use CDSSTR for your work please cite the
+                    following:
+
+                    Sreerama, N. and Woody, R.W. (2000) Estimation of protein
+                    secondary structure from CD spectra: Comparison of CONTIN,
+                    SELCON and CDSSTR methods with an expanded reference set.
+                    Anal. Biochem. 287(2), 252-260.
+                    """)
 parser.add_argument('--db_range', type=parse_num_list,
                     default="1-10", help="""
                     CDPro ibasis range to use. Accepted values are
@@ -108,13 +116,11 @@ parser.add_argument('--continll', action="store_true", required=False,
                     If you use CONTINLL for your work please cite the
                     following:
 
-                    [1] Sreerama, N., & Woody, R. W. (2000). Estimation of
+                    Sreerama, N., & Woody, R. W. (2000). Estimation of
                     protein secondary structure from circular dichroism
                     spectra: comparison of CONTIN, SELCON, and CDSSTR methods
                     with an expanded reference set. Analytical biochemistry,
                     287(2), 252-260.
-
-                    [2]
                     """)
 
 parser.add_argument('-v', '--verbose', action="store_true",
