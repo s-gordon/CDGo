@@ -66,11 +66,19 @@ def r_squared(calc, obs):
     return 1 - (ss_res / ss_tot)
 
 
-def millidegrees_to_epsilon(df, mrc):
+def millidegrees_to_epsilon(df, mol_wt, n_residues, p_conc, L=0.1):
     """TODO
 
     df: single column pandas dataframe
-    mrc: mean residue concentration conversion factor
-    returns:
+    mol_wt: average molecular weight of protein (Da)
+    n_residues: number of residues in the protein
+    p_conc: protein concentration (g/L)
+    L: Cuvette path length (cm)
+    returns: pandas dataframe in units of molar extinction (delta epsilon)
     """
-    return (df * mrc/3298).map(lambda x: '%1.3f' % x)
+    # peptides bonds equivalent to number of residues - 1
+    pep = n_residues - 1
+    # epsilon conversion factor
+    eps_f = mol_wt / (10 * L * pep * p_conc * 3298)
+    #
+    return (df * eps_f).map(lambda x: '%1.3f' % x)

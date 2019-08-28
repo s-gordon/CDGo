@@ -83,6 +83,9 @@ parser.add_argument('-i', action="store", dest="cdpro_input",
 parser.add_argument('--mol_weight', action="store", required=True,
                     type=float,
                     help="Molecular weight (Da)")
+parser.add_argument('--pathlength', action="store", required=False,
+                    type=float, default=0.1,
+                    help="Pathlength of cuvette (cm).")
 parser.add_argument('--number_residues', action="store", required=True,
                     type=int, help="Residues")
 parser.add_argument('--concentration', action="store", required=True,
@@ -157,6 +160,7 @@ def logfile(fname, parser, **kwargs):
         f.write('CDPro path: {}\n'.format(parser.cdpro_dir))
         f.write('Input file: {}\n'.format(parser.cdpro_input))
         f.write('Protein molecular weight: {}\n'.format(parser.mol_weight))
+        f.write('Cuvette pathlength (cm): {}\n'.format(parser.pathlength))
         f.write('Number of residues: {}\n'.format(parser.number_residues))
         f.write('Protein concentration: {}\n'.format(parser.concentration))
         f.write('Buffer file: {}\n'.format(parser.buffer))
@@ -503,18 +507,18 @@ def main():
     # drop mismatched wavelengths
     df = df.dropna()
 
-    # convert into units of mre
-    pep_bonds = result.number_residues - 1
-    mrc = result.mol_weight / (pep_bonds * result.concentration)
-
     # Convert from the input units of millidegrees to the standard delta
-    # epsilon
+    # epsilon, dropping nan lines
+    # Convert both the average (df) and standard dev (dat["std"])
     epsilon = pd.concat(
-        [millidegrees_to_epsilon(df, mrc),
-         millidegrees_to_epsilon(dat["std"], mrc)], axis=1).dropna()
+        [millidegrees_to_epsilon(df, result.mol_weight, result.number_residues,
+                                 result.concentration, L=result.pathlength),
+         millidegrees_to_epsilon(dat["std"], result.mol_weight,
+                                 result.number_residues, result.concentration,
+                                 L=result.pathlength)], axis=1).dropna()
 
+    # derermine min, max, and step of wavelengths recorded
     max, min, step = list_params(epsilon["ave"])
-
     # Remap the df index to floats. Required for drop_indices
     epsilon.index = epsilon.index.map(float)
     # force inverse sorting
