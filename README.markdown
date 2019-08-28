@@ -1,6 +1,6 @@
-# CDGo: A Wrapper for Analysing Circular Dichroism Spectroscopy Data #
+# CDGo: A Wrapper for Analysing Circular Dichroism Spectroscopy Data
 
-## Installation ##
+## Installation
 
 Easiest way to download is by using git:
 
@@ -23,7 +23,7 @@ conveniently installed using the python package manager `pip`:
 pip install -r requirements_dev.txt
 ```
 
-## Dependencies ##
+## Dependencies
 
 * Wine
 * Python 2.7+
@@ -58,12 +58,12 @@ environment as well as the dependencies called for by CDGo.
 Alternatively, one could set up a unix-like environment on Windows by using a
 virtual machine (e.g. using VirtualBox).
 
-## Usage ##
+## Usage
 
 ```sh
 cdgo [-h] [-C CDPRO_DIR] -i CDPRO_INPUT --mol_weight MOL_WEIGHT \
 --number_residues NUMBER_RESIDUES --concentration CONCENTRATION \
-[--buffer BUFFER] [--cdsstr] [--continll] [-v]
+--pathlength PATHLENGTH [--buffer BUFFER] [--cdsstr] [--continll] [-v]
 ```
 
 ```sh
@@ -73,7 +73,7 @@ cdgo --help
 Output will be written to a folder in the same directory as the input of the
 format `<input>-CDPro`.
 
-## Ongoing Issues ##
+## Ongoing Issues
 
 ### Input files with replicates ###
 
@@ -92,18 +92,20 @@ replicate from the input file.~~
 Support for multi-scan Aviv files was added in release v0.4a. Scans are
 automatically averaged and standard deviation reported.
 
-## Who do I talk to ##
+## Who do I talk to
 
 * Shane Gordon
 * Tao Nelson (original author)
 
-## Contributors ##
+## Contributors
 
 See contributors.txt
 
-## Citation ##
+## Citation
 
-### CDGo ###
+For publications please cite the following resources as appropriate.
+
+### CDGo
 
 CDGo is research software. If you make use of CDGo in scientific publications,
 please cite it. The BibTeX reference is as follows:
@@ -119,7 +121,7 @@ please cite it. The BibTeX reference is as follows:
   }
 ```
 
-### CDPro ###
+### CDPro
 
 CDPro is research software. If you make use of CDGo in scientific publications,
 please cite it. The BibTeX reference is as follows:
@@ -179,7 +181,7 @@ details.
 
 ```
 
-### CDSSTR ###
+### CDSSTR
 
 ```bib
 @article{Sreerama:00,
@@ -211,11 +213,17 @@ details.
 }
 ```
 
-### Everything Else ###
+### Protein Reference Sets
+
+Full details for how to reference each protein reference set are provided at
+the [CDPro website](https://sites.bmb.colostate.edu/sreeram/CDPro/). Please
+cite these as appropriate if used in publications.
+
+### Everything Else
 
 Generally refer to the website for
 [CDPro](http://sites.bmb.colostate.edu/sreeram/CDPro/).
 
-## Licence ##
+## Licence
 
-See LICENSE.md
+See [LICENSE](https://github.com/s-gordon/CDGo/blob/development/LICENSE).
