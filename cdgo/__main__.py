@@ -39,11 +39,10 @@ notes = (
     'Use of individual protein reference databases should also be credited\n'
     'appropriately. For a full listing of each database and the \n'
     'appropriate citation, please use the following link:\n'
-    '\thttp://sites.bmb.colostate.edu/sreeram/CDPro/\n'
-)
+    '\thttp://sites.bmb.colostate.edu/sreeram/CDPro/\n')
 now = datetime.now()
 
-print notes
+print(notes)
 
 
 def parse_num_list(string):
@@ -61,7 +60,7 @@ def parse_num_list(string):
             "' is not a range of number. Expected forms like '0-5' or '2'.")
     start = m.group(1)
     end = m.group(2) or start
-    return list(range(int(start, 10), int(end, 10)+1))
+    return list(range(int(start, 10), int(end, 10) + 1))
 
 
 # Argparse
@@ -74,25 +73,46 @@ class MyParser(argparse.ArgumentParser):
 
 parser = MyParser(description='Run CDPro automatically.',
                   formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('-C', action="store", dest="cdpro_dir",
+parser.add_argument('-C',
+                    action="store",
+                    dest="cdpro_dir",
                     default="/Users/sgordon/.wine/drive_c/Program Files/CDPro",
                     help="CDPro executable directory")
-parser.add_argument('-i', action="store", dest="cdpro_input",
-                    required=True, help="Aviv-format protein sample CD \
+parser.add_argument('-i',
+                    action="store",
+                    dest="cdpro_input",
+                    required=True,
+                    help="Aviv-format protein sample CD \
                     spectra file.")
-parser.add_argument('--mol_weight', action="store", required=True,
+parser.add_argument('--mol_weight',
+                    action="store",
+                    required=True,
                     type=float,
                     help="Molecular weight (Da)")
-parser.add_argument('--pathlength', action="store", required=False,
-                    type=float, default=0.1,
+parser.add_argument('--pathlength',
+                    action="store",
+                    required=False,
+                    type=float,
+                    default=0.1,
                     help="Pathlength of cuvette (cm).")
-parser.add_argument('--number_residues', action="store", required=True,
-                    type=int, help="Residues")
-parser.add_argument('--concentration', action="store", required=True,
-                    type=float, help="Concentration (mg/ml)")
-parser.add_argument('--buffer', action="store", required=False,
-                    dest="buffer", help="Buffer file for blank.")
-parser.add_argument('--cdsstr', action="store_true", required=False,
+parser.add_argument('--number_residues',
+                    action="store",
+                    required=True,
+                    type=int,
+                    help="Residues")
+parser.add_argument('--concentration',
+                    action="store",
+                    required=True,
+                    type=float,
+                    help="Concentration (mg/ml)")
+parser.add_argument('--buffer',
+                    action="store",
+                    required=False,
+                    dest="buffer",
+                    help="Buffer file for blank.")
+parser.add_argument('--cdsstr',
+                    action="store_true",
+                    required=False,
                     help="""
                     Use CDSSTR algorithm for fitting.
 
@@ -104,15 +124,19 @@ parser.add_argument('--cdsstr', action="store_true", required=False,
                     SELCON and CDSSTR methods with an expanded reference set.
                     Anal. Biochem. 287(2), 252-260.
                     """)
-parser.add_argument('--db_range', type=parse_num_list,
-                    default="1-10", help="""
+parser.add_argument('--db_range',
+                    type=parse_num_list,
+                    default="1-10",
+                    help="""
                     CDPro ibasis range to use. Accepted values are
                     between 1 and 10 inclusive.
 
                     Acceptable values are ranges (e.g. 2-5) or integers
                     (e.g. 2).
                     """)
-parser.add_argument('--continll', action="store_true", required=False,
+parser.add_argument('--continll',
+                    action="store_true",
+                    required=False,
                     help="""
                     Use CONTINLL algorithm for fitting.
 
@@ -126,11 +150,12 @@ parser.add_argument('--continll', action="store_true", required=False,
                     287(2), 252-260.
                     """)
 
-parser.add_argument('-v', '--verbose', action="store_true",
+parser.add_argument('-v',
+                    '--verbose',
+                    action="store_true",
                     help="Increase verbosity")
 
 result = parser.parse_args()
-
 """
 If verbosity set, change logging to debug.
 Else leave at info
@@ -206,14 +231,11 @@ def read_multi_aviv(f):
         logging.error(
             ("The experiment type for one or more of input files is {e}.\n"
              "Only wavelength experiments are allowed at this time. Please\n"
-             "check your inputs and try again."
-             ).format(e=exp_type)
-        )
+             "check your inputs and try again.").format(e=exp_type))
         sys.exit(2)
     else:
-        logging.debug(
-            "Experiment type for file {f} is {e}.".format(f=f, e=exp_type)
-        )
+        logging.debug("Experiment type for file {f} is {e}.".format(
+            f=f, e=exp_type))
 
     # read data into buffer
     stream = open(f, 'r')
@@ -222,8 +244,8 @@ def read_multi_aviv(f):
 
     # regex find exp data components and assign to new var d
     d = re.findall(
-        "(?<=\$MDCDATA).*?(?=\$MDCNAME)|(?<=\$MDCDATA).*?(?=\$ENDDATA)",
-        input, re.DOTALL)
+        "(?<=\$MDCDATA).*?(?=\$MDCNAME)|(?<=\$MDCDATA).*?(?=\$ENDDATA)", input,
+        re.DOTALL)
 
     # create new list and populate it with processed aviv data
     # each data set is an item in the new list
@@ -256,8 +278,11 @@ def aviv_raw_input_to_pandas(input):
     """
     # read input to dataframe, delimiting with spaces
     # discard first line, containing config jargon
-    df = pd.read_csv(StringIO.StringIO(input), sep="  ", skiprows=1,
-                     header=0, engine="python")
+    df = pd.read_csv(StringIO.StringIO(input),
+                     sep="  ",
+                     skiprows=1,
+                     header=0,
+                     engine="python")
     # Set row names (indices) to col X (i.e. wavelength)
     df = df.set_index('X')
     # Throw away data when the dynode voltage peaks beyond 600
@@ -309,8 +334,8 @@ def cdpro_input_header(firstvalue, lastvalue):
               "#     WL_Begin     WL_End       Factor             \n"
               "      {first}      {last}      1.0000\n"
               "#                                                  \n"
-              "# CDDATA (Long->Short Wavelength; 260 - 178 LIMITS \n"
-              ).format(first=lastvalue, last=firstvalue)
+              "# CDDATA (Long->Short Wavelength; 260 - 178 LIMITS \n").format(
+                  first=lastvalue, last=firstvalue)
     return header
 
 
@@ -322,8 +347,7 @@ def cdpro_input_footer():
 
     footer = ("#                                                  \n"
               "#  IGuess  Str1   Str2   Str3   Str4   Str5    Str6\n"
-              "        0                                          \n"
-              )
+              "        0                                          \n")
     return footer
 
 
@@ -393,19 +417,24 @@ def list_params(df):
         step = df[-1] - df[-2]
     except IndexError:
         logging.error(
-            "Bad input data. Please check that data is correctly formatted"
-        )
+            "Bad input data. Please check that data is correctly formatted")
         sys.exit(2)
     return min, max, step
 
 
-def single_line_scatter(datafile, fit_label, ax, flip=True, x_col_name='WaveL',
+def single_line_scatter(datafile,
+                        fit_label,
+                        ax,
+                        flip=True,
+                        x_col_name='WaveL',
                         calc_col='CalcCD'):
     """Docstring for single_line_scatter
 
     """
 
-    df = pd.read_csv(datafile, skipinitialspace=True, sep=r"\s*",
+    df = pd.read_csv(datafile,
+                     skipinitialspace=True,
+                     sep=r"\s*",
                      engine='python')
 
     # Invert data vertically to compensate for CDPro output
@@ -476,8 +505,9 @@ def best_fit(df, col, ax):
     # full file name and path for plot file
     fname = '{a}-ibasis{i}/{f}'.format(a=col, i=top.name, f=fit_fname)
     # plot label for matplotlib
-    flab = '{alg} ibasis {ib} (RMSD: {rmsd})'.format(
-        alg=col, ib=top.name, rmsd=top['rmsd'])
+    flab = '{alg} ibasis {ib} (RMSD: {rmsd})'.format(alg=col,
+                                                     ib=top.name,
+                                                     rmsd=top['rmsd'])
     # plot on supplied axis
     single_line_scatter(fname, flab, ax)
 
@@ -510,19 +540,26 @@ def main():
     # Convert from the input units of millidegrees to the standard delta
     # epsilon, dropping nan lines
     # Convert both the average (df) and standard dev (dat["std"])
-    epsilon = pd.concat(
-        [millidegrees_to_epsilon(df, result.mol_weight, result.number_residues,
-                                 result.concentration, L=result.pathlength),
-         millidegrees_to_epsilon(dat["std"], result.mol_weight,
-                                 result.number_residues, result.concentration,
-                                 L=result.pathlength)], axis=1).dropna()
+    epsilon = pd.concat([
+        millidegrees_to_epsilon(df,
+                                result.mol_weight,
+                                result.number_residues,
+                                result.concentration,
+                                L=result.pathlength),
+        millidegrees_to_epsilon(dat["std"],
+                                result.mol_weight,
+                                result.number_residues,
+                                result.concentration,
+                                L=result.pathlength)
+    ],
+                        axis=1).dropna()
 
     # derermine min, max, and step of wavelengths recorded
     max, min, step = list_params(epsilon["ave"])
     # Remap the df index to floats. Required for drop_indices
     epsilon.index = epsilon.index.map(float)
     # force inverse sorting
-    epsilon = epsilon.sort_index(ascending=False)    # force inverse sorting
+    epsilon = epsilon.sort_index(ascending=False)  # force inverse sorting
     # drop bad datapoints
     epsilon_ints = drop_indices(epsilon)
 
@@ -539,8 +576,8 @@ def main():
 
     cdpro_out_dir = "%s/%s-CDPro" % (base_dir, result.cdpro_input)
     delete_dir(cdpro_out_dir)
-    logging.debug('Processing %s into %s' % (result.cdpro_input,
-                                             cdpro_out_dir))
+    logging.debug('Processing %s into %s' %
+                  (result.cdpro_input, cdpro_out_dir))
     # log args into to logfile lname
     lname = '{p}/input.log'.format(p=cdpro_out_dir)
     logfile(lname, result, reps_sample=dat.nreps, reps_reference=buf.nreps)
@@ -554,8 +591,10 @@ def main():
 
         replace_input('input', 'input', ibasis)
 
-        ss_col_head = ['ibasis', 'alg', 'ahelix', 'bstrand', 'turn', 'unord',
-                       'rmsd', 'ss_res', 'r2']
+        ss_col_head = [
+            'ibasis', 'alg', 'ahelix', 'bstrand', 'turn', 'unord', 'rmsd',
+            'ss_res', 'r2'
+        ]
 
         if result.continll is True:
             """
@@ -565,21 +604,21 @@ def main():
             logging.debug('Running CONTINLL')
             subprocess.call([continll_cmd], shell=True)
 
-            continll_outdir = ('%s/continll-ibasis%s' % (cdpro_out_dir,
-                                                         ibasis))
+            continll_outdir = ('%s/continll-ibasis%s' %
+                               (cdpro_out_dir, ibasis))
             continll_out = cd_output_style("CONTINLL.OUT", "continll.out",
                                            "continll")
 
             make_dir(continll_outdir)
-            for f in ["CONTIN.CD", "CONTIN.OUT", continll_out,
-                      "BASIS.PG", "ProtSS.out", "SUMMARY.PG", "stdout"]:
+            for f in [
+                    "CONTIN.CD", "CONTIN.OUT", continll_out, "BASIS.PG",
+                    "ProtSS.out", "SUMMARY.PG", "stdout"
+            ]:
                 shutil.move(f, "%s/" % (continll_outdir))
                 if os.path.isfile("input"):
                     shutil.copy("input", "%s/" % (continll_outdir))
             # read in fit values and stats
-            db, int, ss = read_protss(
-                '{}/ProtSS.out'.format(continll_outdir))
-
+            db, int, ss = read_protss('{}/ProtSS.out'.format(continll_outdir))
             """
             read in continll output
             returns stats about fit such as rms error, sum-of-squares
@@ -591,12 +630,11 @@ def main():
             rmsd = rms_error(p['CalcCD'], p['ExpCD'])
 
             # define new dataframe with output from read_protss
-            df = pd.DataFrame(
-                [[db, 'continll', ss['ahelix'], ss['bstrand'], ss['turn'],
-                  ss['unord'], rmsd, ss_res, r2]],
-                index=[ibasis]
-
-            )
+            df = pd.DataFrame([[
+                db, 'continll', ss['ahelix'], ss['bstrand'], ss['turn'],
+                ss['unord'], rmsd, ss_res, r2
+            ]],
+                              index=[ibasis])
             # append fit values and stats to dataframe
             ss_assign = ss_assign.append(df)
 
@@ -611,15 +649,12 @@ def main():
             make_dir(cdsstr_outdir)
             cdsstr_out = cd_output_style("CDsstr.out", "cdsstr.out", "CDSSTR")
 
-            for f in ["reconCD.out", "ProtSS.out", cdsstr_out,
-                      "stdout"]:
+            for f in ["reconCD.out", "ProtSS.out", cdsstr_out, "stdout"]:
                 shutil.move(f, "%s/" % (cdsstr_outdir))
             if os.path.isfile("input"):
                 shutil.copy("input", "%s/" % (cdsstr_outdir))
             # read in fit values and stats
-            db, int, ss = read_protss(
-                '{}/ProtSS.out'.format(cdsstr_outdir))
-
+            db, int, ss = read_protss('{}/ProtSS.out'.format(cdsstr_outdir))
             """
             read in continll output
             returns stats about fit such as rms error, sum-of-squares
@@ -630,10 +665,11 @@ def main():
             r2 = r_squared(p['CalcCD'], p['Exptl'])
             rmsd = rms_error(p['CalcCD'], p['Exptl'])
 
-            df = pd.DataFrame(
-                [[db, 'cdsstr', ss['ahelix'], ss['bstrand'], ss['turn'],
-                  ss['unord'], rmsd, ss_res, r2]], index=[ibasis]
-            )
+            df = pd.DataFrame([[
+                db, 'cdsstr', ss['ahelix'], ss['bstrand'], ss['turn'],
+                ss['unord'], rmsd, ss_res, r2
+            ]],
+                              index=[ibasis])
             # append fit values and stats to dataframe
             ss_assign = ss_assign.append(df)
 
@@ -652,8 +688,8 @@ def main():
     # Print the matplotlib overlay
     logging.debug('Plotting fit overlays')
 
-    outfile = 'CDSpec-{}-{}-Overlay.png'.format(
-        result.cdpro_input, time.strftime("%Y%m%d"))
+    outfile = 'CDSpec-{}-{}-Overlay.png'.format(result.cdpro_input,
+                                                time.strftime("%Y%m%d"))
 
     ax = plt.subplots(nrows=1, ncols=1)[1]
 
@@ -667,7 +703,11 @@ def main():
     epsilon["std"] = epsilon["std"].astype(float)
     epsilon["wl"] = epsilon.index
 
-    epsilon.plot.scatter(ax=ax, x="wl", y="ave", yerr="std", label="exp",
+    epsilon.plot.scatter(ax=ax,
+                         x="wl",
+                         y="ave",
+                         yerr="std",
+                         label="exp",
                          color="black")
     ax.set_xlabel('Wavelength (nm)')
     ax.set_ylabel('$\Delta\epsilon$ ($M^{-1}{\cdot}cm^{-1}$)')
@@ -678,8 +718,7 @@ def main():
     epsilon.to_csv('{}/exp_data_delta_epsilon.csv'.format(cdpro_out_dir))
 
     ss_assign.to_csv(
-        '{}/secondary_structure_summary.csv'.format(cdpro_out_dir)
-    )
+        '{}/secondary_structure_summary.csv'.format(cdpro_out_dir))
     logging.info('\n{}\n'.format(ss_assign))
 
 
