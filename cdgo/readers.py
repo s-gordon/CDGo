@@ -97,7 +97,7 @@ def read_protss(f):
             if i == 4:
                 # ibasis set name
                 dname = split_string(line)[4]
-                if dname in refsets.iterkeys():
+                if dname in iter(refsets.keys()):
                     d_int = refsets[dname]
             elif i == 6:
                 # rmsd value

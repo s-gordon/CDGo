@@ -27,7 +27,7 @@ def fit_stats(obs, fit):
     return r_squared, ss_tot, ss_res, resid
 
 
-def sum_squares_total(calc, obs):
+def sum_squares_total(obs):
     """
     https://stackoverflow.com/questions/19189362/getting-the-r-squared-
     value-using-curve-fit
