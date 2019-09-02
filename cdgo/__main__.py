@@ -474,7 +474,7 @@ def best_fit(df, col, ax):
     # select only rows with alg value equal to col
     df = df.loc[df['alg'] == col]
     # select row with lowest rmsd value as top
-    top = df.ix[df['rmsd'].idxmin()]
+    top = df.loc[df['rmsd'].idxmin()]
     logging.info('best ibasis for {a}: {i}'.format(a=col, i=top.name))
     # full file name and path for plot file
     fname = '{a}-ibasis{i}/{f}'.format(a=col, i=top.name, f=fit_fname)

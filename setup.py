@@ -25,7 +25,7 @@ test_requirements = [
 
 setup(
     name='cdgo',
-    version='0.3a',
+    version='0.5a0',
     description=("A Framework for Analysing Circular Dichroism Spectroscopy "
                  "Data Using CDPro"),
     long_description=readme + '\n\n' + history,
@@ -47,7 +47,7 @@ setup(
     zip_safe=False,
     keywords='cdgo',
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 4 - Alpha',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Natural Language :: English',

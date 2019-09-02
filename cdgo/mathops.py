@@ -62,7 +62,7 @@ def r_squared(calc, obs):
     value-using-curve-fit
     """
     ss_res = sum_squares_residuals(calc, obs)
-    ss_tot = sum_squares_total(calc, obs)
+    ss_tot = sum_squares_total(obs)
     return 1 - (ss_res / ss_tot)
 
 
