@@ -14,15 +14,18 @@ import time
 import matplotlib.pyplot as plt
 import pandas as pd
 import more_itertools
-import StringIO
+try:
+    from io import StringIO   # python2
+except ImportError:
+    from io import StringIO  # python3
 import cdgo
-from mathops import sum_squares_residuals
-from mathops import r_squared
-from mathops import rms_error
-from mathops import millidegrees_to_epsilon
-from readers import read_protss
-from readers import read_continll
-from readers import read_cdsstr
+from .mathops import sum_squares_residuals
+from .mathops import r_squared
+from .mathops import rms_error
+from .mathops import millidegrees_to_epsilon
+from .readers import read_protss
+from .readers import read_continll
+from .readers import read_cdsstr
 
 notes = (
     "\n"
@@ -43,7 +46,7 @@ notes = (
 )
 now = datetime.now()
 
-print notes
+print(notes)
 
 
 def parse_num_list(string):
@@ -167,7 +170,7 @@ def logfile(fname, parser, **kwargs):
         f.write('iBasis range: {}\n'.format(parser.db_range))
         f.write('CONTINLL?: {}\n'.format(parser.continll))
         f.write('CDSSTR?: {}\n'.format(parser.cdsstr))
-        for key, value in kwargs.items():
+        for key, value in list(kwargs.items()):
             f.write('{}: {}\n'.format(key, value))
 
 
@@ -183,8 +186,8 @@ def read_line(f, line_no):
     with open(f) as fp:
         for i, line in enumerate(fp):
             if i == line_no:
-                l = line
-    return l
+                entry = line
+    return entry
 
 
 def read_multi_aviv(f):
@@ -256,7 +259,7 @@ def aviv_raw_input_to_pandas(input):
     """
     # read input to dataframe, delimiting with spaces
     # discard first line, containing config jargon
-    df = pd.read_csv(StringIO.StringIO(input), sep="  ", skiprows=1,
+    df = pd.read_csv(StringIO(input), sep="  ", skiprows=1,
                      header=0, engine="python")
     # Set row names (indices) to col X (i.e. wavelength)
     df = df.set_index('X')
