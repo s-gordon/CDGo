@@ -108,8 +108,6 @@ def read_protss(f):
             #     qfit = split_string(line)[2]
             #     rmsd = (float(qfit))
 
-    """
-    """
     if dname in ibasis_group_1['members']:
         ahelix = format_val(dec_to_percent((ss[0] + ss[1])/np.sum(ss)))
         bstrand = format_val(dec_to_percent(ss[2] + ss[3])/np.sum(ss))

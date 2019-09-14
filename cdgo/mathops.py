@@ -12,7 +12,7 @@ def residuals(fit, obs):
     :returns: fit minus observed data points
 
     """
-    return fit-obs
+    return fit - obs
 
 
 def fit_stats(obs, fit):

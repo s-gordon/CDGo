@@ -5,3 +5,5 @@ matplotlib
 pandas
 more_itertools
 seaborn
+tabulate
+PyQt5

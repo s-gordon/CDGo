@@ -38,7 +38,8 @@ setup(
     package_dir={'cdgo': 'cdgo'},
     entry_points={
         'console_scripts': [
-            'cdgo = cdgo.__main__:main'
+            'cdgo = cdgo.cli:main',
+            'cdgoapp = cdgo.app:main'
         ]
     },
     include_package_data=True,
