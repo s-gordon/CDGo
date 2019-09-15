@@ -2,9 +2,16 @@
 
 import sys
 import logging
+import signal
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from cdgo.core import (check_cdpro_install, print_citation_info, run)
+
+
+def sigintHandler(*args):
+    """Handler for SIGINT"""
+    sys.stderr.write("\r")
+    QtWidgets.QApplication.quit()
 
 
 class QPlainTextEditLogger(logging.Handler):
@@ -367,7 +374,11 @@ class Ui_MainWindow(QtWidgets.QDialog, QtWidgets.QPlainTextEdit):
 
 
 def main():
+    signal.signal(signal.SIGINT, sigintHandler)
     app = QtWidgets.QApplication(sys.argv)
+    timer = QtCore.QTimer()
+    timer.start(500)
+    timer.timeout.connect(lambda: None)
     MainWindow = QtWidgets.QMainWindow()
     ui = Ui_MainWindow()
     ui.setupUi(MainWindow)
