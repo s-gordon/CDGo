@@ -12,6 +12,7 @@ import sys
 import time
 import textwrap
 import ntpath
+import platform
 
 import seaborn as sns
 from datetime import datetime
@@ -149,18 +150,17 @@ def delete_dir(dir):
     os.makedirs(dir)
 
 
-def check_cmd(*kwargs):
-    """Verify that exe in accessible
-
-    exe: absolute path to exe file, or entry within PATH
-    returns: None
+def check_wine():
+    """Verify that program is in path
+    returns: True if wine is in path
     """
-    for exe in kwargs:
-        try:
-            subprocess.check_call(['%s --version>/dev/null' % exe], shell=True)
-        except subprocess.CalledProcessError:
-            logger.error('Command %s not found or not in path' % exe)
-            sys.exit(2)
+    logger.debug('Checking for \"{}\"'.format("wine"))
+    try:
+        subprocess.check_call(['wine --version>/dev/null'], shell=True)
+        return True
+    except subprocess.CalledProcessError:
+        logger.error("\"wine\" is not in PATH. Please install and try again.")
+        return False
 
 
 def make_dir(dir):
@@ -225,8 +225,11 @@ def run_continll(ibasis_idx, opath):
     ibasisID: ibasis index [1-10] to use with continll
     returns:
     """
-    continll_cmd = ('echo | WINEDEBUG=-all wine Continll.exe > '
-                    'stdout || echo -n "(crashed)"')
+    if find_platform != "windows":
+        continll_cmd = ('echo | WINEDEBUG=-all wine Continll.exe > '
+                        'stdout || echo -n "(crashed)"')
+    else:
+        continll_cmd = ('echo . | Continll.exe > stdout')
     continll_outdir = ('{}/continll-ibasis{}'.format(opath, ibasis_idx))
     logging.info('Running CONTINLL')
     subprocess.call([continll_cmd], shell=True)
@@ -336,6 +339,10 @@ def best_fit(df, col, ax):
     single_line_scatter(fname, flab, ax)
 
 
+def find_platform():
+    return platform.system()
+
+
 def replace_input(input, output, ibasis):
     """
     return: None
@@ -383,6 +390,14 @@ def run(ps,
     """
     print_citation_info()
 
+    # for non-windows systems, check that wine is installed and in PATH
+    # if not, exit and print error
+    if find_platform != "Windows":
+        if check_wine() is False:
+            logging.error("\"wine\" not found in PATH. Cannot continue.")
+            logging.error("Please install wine to PATH and try again.")
+            return
+
     # read in data files for dataset (dat) and reference buffer for subtraction
     # (buf)
     spectra = AvivReader(ps, bs, mw, number_residues, conc, pl)
@@ -397,7 +412,6 @@ def run(ps,
     head = cdpro_input_header(spectra.max, spectra.min)
     body = list(more_itertools.chunked(spectra.epsilon_ints["ave"], 10))
     cdpro_input_writer(body, head)
-    check_cmd('wine')
     check_dir(cdpro_install_path)
     base_dir = os.path.dirname(os.path.realpath(ps))
     psNameStripped = ntpath.basename(ps)
