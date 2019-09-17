@@ -10,13 +10,13 @@ with open('HISTORY.markdown') as history_file:
     history = history_file.read()
 
 requirements = [
-    "logging",
     "argparse",
     "numpy",
     "matplotlib",
     "pandas",
     "more_itertools",
-    "seaborn"
+    "seaborn",
+    "tabulate"
 ]
 
 test_requirements = [

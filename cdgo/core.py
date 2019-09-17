@@ -225,14 +225,14 @@ def run_continll(ibasis_idx, opath):
     ibasisID: ibasis index [1-10] to use with continll
     returns:
     """
-    if find_platform != "windows":
-        continll_cmd = ('echo | WINEDEBUG=-all wine Continll.exe > '
-                        'stdout || echo -n "(crashed)"')
+    if find_platform() != "Windows":
+        continll_cmd = ["echo", "|", "WINEDEBUG=-all", "wine", "Continll.exe", ">stdout",
+        "||", "echo", "-n", "\"(crashed)\""]
     else:
-        continll_cmd = ('echo . | Continll.exe > stdout')
+        continll_cmd = ["echo", ".", "|", "Continll.exe", ">stdout"]
     continll_outdir = ('{}/continll-ibasis{}'.format(opath, ibasis_idx))
     logging.info('Running CONTINLL')
-    subprocess.call([continll_cmd], shell=True)
+    subprocess.call(continll_cmd, shell=True)
     continll_out = cd_output_style("CONTINLL.OUT", "continll.out", "continll")
 
     make_dir(continll_outdir)
@@ -275,8 +275,11 @@ def run_cdsstr(ibasis_idx, opath):
     ibasisID: ibasis index [1-10]
     returns:
     """
-    cdsstr_cmd = ('echo | WINEDEBUG=-all wine CDSSTR.EXE > stdout || '
-                  '"echo -n (crashed)"')
+    if find_platform() != "Windows":
+        cdsstr_cmd = ["echo", "|", "WINEDEBUG=-all", "wine", "CDSSTR.EXE", ">stdout",
+        "||", "echo", "-n", "\"(crashed)\""]
+    else:
+        cdsstr_cmd = ["echo", ".", "|", "CDSSTR.EXE", ">stdout"]
     cdsstr_outdir = ('{}/cdsstr-ibasis{}'.format(opath, ibasis_idx))
     logging.info('Running CDSSTR')
     subprocess.call([cdsstr_cmd], shell=True)
@@ -392,7 +395,7 @@ def run(ps,
 
     # for non-windows systems, check that wine is installed and in PATH
     # if not, exit and print error
-    if find_platform != "Windows":
+    if find_platform() != "Windows":
         if check_wine() is False:
             logging.error("\"wine\" not found in PATH. Cannot continue.")
             logging.error("Please install wine to PATH and try again.")
