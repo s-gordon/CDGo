@@ -8,7 +8,7 @@ Easiest way to download is by using git:
 git clone https://github.com/s-gordon/CDGo.git
 ```
 
-Then install CDGo using your favourite python installation (v2.7+):
+Then install CDGo using your favourite python installation (v3.5++):
 
 ```sh
 cd /path/to/cdgo/source
@@ -16,7 +16,7 @@ python setup.py install
 ```
 
 There are several dependencies required by CDGo not found in many base python
-installations. These are listed in `requirements_dev.txt` and can be
+installations. These are listed in `requirements.txt` and can be
 conveniently installed using the python package manager `pip`:
 
 ```sh
@@ -26,7 +26,7 @@ pip install -r requirements_dev.txt
 ## Dependencies
 
 * Wine
-* Python 2.7+
+* Python v3.5+
 
 Most of these can be installed through Homebrew (OSX) or your trusty Linux
 package manager.
@@ -58,6 +58,9 @@ environment as well as the dependencies called for by CDGo.
 Alternatively, one could set up a unix-like environment on Windows by using a
 virtual machine (e.g. using VirtualBox).
 
+Beginning in v0.6a, support is added for Windows via pre-compiled binaries.
+These are provided in the release page.
+
 ## Usage
 
 ```sh
@@ -71,7 +74,8 @@ cdgo --help
 ```
 
 Output will be written to a folder in the same directory as the input of the
-format `<input>-CDPro`.
+format `<input>-CDPro`. In the event that a folder would be overwritten, the
+path is appended with the current date.
 
 ## Ongoing Issues
 
