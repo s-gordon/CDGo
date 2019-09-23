@@ -226,8 +226,8 @@ def run_continll(ibasis_idx, opath):
     returns:
     """
     if find_platform() != "Windows":
-        continll_cmd = ["echo", "|", "WINEDEBUG=-all", "wine", "Continll.exe", ">stdout",
-        "||", "echo", "-n", "\"(crashed)\""]
+        continll_cmd = ["echo", "|", "WINEDEBUG=-all", "wine", "Continll.exe",
+                        ">stdout", "||", "echo", "-n", "\"(crashed)\""]
     else:
         continll_cmd = ["echo", ".", "|", "Continll.exe", ">stdout"]
     continll_outdir = ('{}/continll-ibasis{}'.format(opath, ibasis_idx))
@@ -276,8 +276,8 @@ def run_cdsstr(ibasis_idx, opath):
     returns:
     """
     if find_platform() != "Windows":
-        cdsstr_cmd = ["echo", "|", "WINEDEBUG=-all", "wine", "CDSSTR.EXE", ">stdout",
-        "||", "echo", "-n", "\"(crashed)\""]
+        cdsstr_cmd = ["echo", "|", "WINEDEBUG=-all", "wine", "CDSSTR.EXE",
+                      ">stdout", "||", "echo", "-n", "\"(crashed)\""]
     else:
         cdsstr_cmd = ["echo", ".", "|", "CDSSTR.EXE", ">stdout"]
     cdsstr_outdir = ('{}/cdsstr-ibasis{}'.format(opath, ibasis_idx))
