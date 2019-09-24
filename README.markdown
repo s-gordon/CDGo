@@ -20,8 +20,11 @@ installations. These are listed in `requirements.txt` and can be
 conveniently installed using the python package manager `pip`:
 
 ```sh
-pip install -r requirements_dev.txt
+pip install -r requirements.txt
 ```
+
+Alternatively, Linux and Windows binaries for the GUI app can be downloaded
+from the releases page.
 
 ## Dependencies
 
@@ -55,9 +58,6 @@ No installation instructions are provided for Windows. This could potentially be
 extended using Cygwin, but would require configuring a complete Python
 environment as well as the dependencies called for by CDGo.
 
-Alternatively, one could set up a unix-like environment on Windows by using a
-virtual machine (e.g. using VirtualBox).
-
 Beginning in v0.6a, support is added for Windows via pre-compiled binaries.
 These are provided in the release page.
 
@@ -73,9 +73,53 @@ cdgo [-h] [-C CDPRO_DIR] -i CDPRO_INPUT --mol_weight MOL_WEIGHT \
 cdgo --help
 ```
 
+The GUI app can also be started from the command line:
+
+```sh
+cdgoapp
+```
+
 Output will be written to a folder in the same directory as the input of the
 format `<input>-CDPro`. In the event that a folder would be overwritten, the
 path is appended with the current date.
+
+## Understanding CDGo Outputs
+
+Once executed, CDGo will generate a new directory in the same path as the input
+protein spectrum name, appended with `-CDPro`. In the event that this directory
+already exists, the directory name will be appended with the current date.
+Under this directory you should find the following structure:
+
+```txt
+── <protein-spectrum-file-name>-CDPro<-date>
+│   ├── CDSpec-<protein-spectrum-file-name>-Overlay.png
+│   ├── continll-ibasis1
+│   │   ├── BASIS.PG
+│   │   ├── CONTIN.CD
+│   │   ├── CONTINLL.OUT
+│   │   ├── CONTIN.OUT
+│   │   ├── input
+│   │   ├── ProtSS.out
+│   │   ├── stdout
+│   │   └── SUMMARY.PG
+│   ├── exp_data_delta_epsilon.csv
+│   ├── input.log
+│   └── secondary_structure_summary.csv
+```
+
+`secondary_structure_summary.csv`: Summary of secondary structure elements from
+each combination of CONTINLL/CDsstr and ibasis
+
+`input.log`: logfile reporting input and output parameters given by GUI or CLI.
+
+`exp_data_delta_epsilon.csv`: CSV-format file reporting averaged CD Signal (in
+delta epsilon; `ave` column), standard deviation (in delta epsilon; `std`
+column), and wavelength (`wl` column).
+
+Each combination of CONTINLL/CDsstr and ibasis will produce a daughter
+directory (e.g. `continll-ibasis1`). Within these directories you should find
+the output from execution of CONTINLL or CDsstr as appropriate. See the [CDPro
+website](https://sites.bmb.colostate.edu/sreeram/CDPro/) for more info.
 
 ## Ongoing Issues
 
