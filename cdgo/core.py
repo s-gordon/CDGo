@@ -170,11 +170,11 @@ def make_dir(dir):
 
 def cd_output_style(style_1, style_2, algorithm):
     if os.path.isfile(style_1) is True:
-        logger.info('{algorithm} style is {style}'.format(algorithm=algorithm,
+        logging.info('{algorithm} style is {style}'.format(algorithm=algorithm,
                                                           style=style_1))
         return style_1
     elif os.path.isfile(style_2) is True:
-        logger.info('{algorithm} style is {style}'.format(algorithm=algorithm,
+        logging.info('{algorithm} style is {style}'.format(algorithm=algorithm,
                                                           style=style_2))
         return style_2
     else:
@@ -226,8 +226,8 @@ def run_continll(ibasis_idx, opath):
     returns:
     """
     if find_platform() != "Windows":
-        continll_cmd = ["echo", "|", "WINEDEBUG=-all", "wine", "Continll.exe",
-                        ">stdout", "||", "echo", "-n", "\"(crashed)\""]
+        continll_cmd = ["echo | WINEDEBUG=-all wine Continll.exe " +
+                        ">stdout || echo -n \"(crashed)\""]
     else:
         continll_cmd = ["echo", ".", "|", "Continll.exe", ">stdout"]
     continll_outdir = ('{}/continll-ibasis{}'.format(opath, ibasis_idx))
