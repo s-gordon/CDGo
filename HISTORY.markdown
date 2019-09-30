@@ -18,3 +18,17 @@ History
 -----------------
 
 * Migration to Python3
+
+0.6-alpha
+-----
+
+* Introduced GUI frontend app: cdgoapp
+* Windows support added (GUI app only)
+
+0.6.1
+-----
+
+* Help messages added to GUI app
+* Spec files added for pyinstaller
+* More detailed instructions added to README
+* Several small patches and fixes
