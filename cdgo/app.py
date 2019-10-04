@@ -38,6 +38,7 @@ class Ui_MainWindow(QtWidgets.QDialog, QtWidgets.QPlainTextEdit):
         self.bufferSpectrumFileName = None
         self.continllOption = False
         self.cdsstrOption = False
+        self.parallelOption = False
         self.dbRange = range(1, 6)
 
     def setupUi(self, MainWindow):
@@ -198,9 +199,16 @@ class Ui_MainWindow(QtWidgets.QDialog, QtWidgets.QPlainTextEdit):
         self.checkBoxCDsstr.setObjectName("checkBoxCDsstr")
         self.formLayout.setWidget(12, QtWidgets.QFormLayout.LabelRole,
                                   self.checkBoxCDsstr)
+        self.checkBoxParallel = QtWidgets.QCheckBox(self.formLayoutWidget)
+        self.checkBoxParallel.setObjectName("checkBoxParallel")
+        self.formLayout.setWidget(13, QtWidgets.QFormLayout.LabelRole,
+                                  self.checkBoxParallel)
 
         self.checkBoxCONTINLL.setToolTip("Toggle CONTINLL function.")
         self.checkBoxCDsstr.setToolTip("Toggle CDsstr function.")
+        self.checkBoxParallel.setToolTip(
+            "Run each combination of continll/cdsstr and ibasis \n" +
+            "concurrently on multiple cores. Defaults to available CPU cores.")
         self.doubleSpinBoxPathlength.setToolTip(
             "Select the pathlength of the cuvette used to collect data.\n" +
             "Common values include 1, 0.1, and 0.05 cm.")
@@ -258,6 +266,8 @@ class Ui_MainWindow(QtWidgets.QDialog, QtWidgets.QPlainTextEdit):
         self.checkBoxCDsstr.stateChanged.connect(self.clickCdsstrCheckBox)
         self.checkBoxCONTINLL.stateChanged.connect(self.clickContinllCheckBox)
 
+        self.checkBoxParallel.stateChanged.connect(self.clickParallelCheckBox)
+
         self.comboBoxIbasis.currentIndexChanged.connect(
             self.ibasisSelectionChange)
 
@@ -286,6 +296,8 @@ class Ui_MainWindow(QtWidgets.QDialog, QtWidgets.QPlainTextEdit):
         self.doubleSpinBoxProteinMW.setSuffix(_translate("MainWindow", " Da"))
         self.checkBoxCONTINLL.setText(_translate("MainWindow", "CONTINLL"))
         self.checkBoxCDsstr.setText(_translate("MainWindow", "CDSSTR"))
+        self.checkBoxParallel.setText(
+            _translate("MainWindow", "Run in parallel?"))
         self.cdproPathInstructLabel.setText(
             _translate("MainWindow", "Select path to CDPro"))
         self.pushButtonBrowseCDProPath.setText(
@@ -381,6 +393,14 @@ class Ui_MainWindow(QtWidgets.QDialog, QtWidgets.QPlainTextEdit):
             logging.info("CDSSTR disabled")
             self.cdsstrOption = False
 
+    def clickParallelCheckBox(self, state):
+        if state == QtCore.Qt.Checked:
+            logging.info("Parallel execution enabled")
+            self.parallelOption = True
+        else:
+            logging.info("Parallel execution disabled")
+            self.parallelOption = False
+
     def run_cdgo(self):
         cdpro = self.cdproTextPathDir
         proteinSpecName = self.proteinSpectrumFileName
@@ -392,8 +412,9 @@ class Ui_MainWindow(QtWidgets.QDialog, QtWidgets.QPlainTextEdit):
         pl = self.doubleSpinBoxPathlength.value()
         continll = self.continllOption
         cdsstr = self.cdsstrOption
+        parallel = self.parallelOption
         run(proteinSpecName, bufferSpecName, cdpro, mw, pl, nres,
-            concentration, dbRange, continll, cdsstr)
+            concentration, dbRange, continll, cdsstr, parallel)
 
 
 def main():

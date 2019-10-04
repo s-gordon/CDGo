@@ -6,14 +6,14 @@ import re
 import sys
 from datetime import datetime
 
-from .init_logging import set_log_level
 from .core import run
+from .init_logging import set_log_level
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARNING)
-ch = logging.StreamHandler()
-ch.setLevel(logging.ERROR)
-logger.addHandler(ch)
+logger = logging.getLogger()
+# logger.setLevel(logging.INFO)
+# ch = logging.StreamHandler()
+# ch.setLevel(logging.ERROR)
+# logger.addHandler(ch)
 
 now = datetime.now()
 
@@ -97,6 +97,15 @@ parser.add_argument('--cdsstr',
                     SELCON and CDSSTR methods with an expanded reference set.
                     Anal. Biochem. 287(2), 252-260.
                     """)
+parser.add_argument('--parallel_execution',
+                    action="store_true",
+                    default=False,
+                    required=False,
+                    dest="parallel_execution",
+                    help="""
+                    Run each ibasis and continll/cdsstr combination in parallel
+                    on multicore systems.
+                    """)
 parser.add_argument('--db_range',
                     type=parse_num_list,
                     default="1-10",
@@ -147,7 +156,8 @@ def main():
         args.concentration,
         args.db_range,
         continll=args.continll,
-        cdsstr=args.cdsstr)
+        cdsstr=args.cdsstr,
+        parallel_execution=args.parallel_execution)
 
 
 if __name__ == '__main__':
