@@ -116,7 +116,7 @@ def read_multi_aviv(f):
     # if the exp type is not wavelength, throw an error and exit
     # delimit with colon + space
     # remove trailing newlines and carriage returns
-    exp_type = read_line(f, 1).split(': ')[1].rstrip("\r\n")
+    exp_type = re.split("\s+:\s+", read_line(f, 1))[1].rstrip("\r\n")
     if exp_type != "Wavelength":
         logger.error(
             ("The experiment type for one or more of input files is {e}.\n"
