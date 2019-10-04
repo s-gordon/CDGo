@@ -32,3 +32,6 @@ History
 * Spec files added for pyinstaller
 * More detailed instructions added to README
 * Several small patches and fixes
+* Option for parallel execution added
+* CDPro installation directory not used in place anymore. Now copied to a
+  temporary directory instead.
