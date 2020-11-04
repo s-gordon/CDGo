@@ -152,7 +152,7 @@ def read_continll(f):
     :returns: pandas dataframe
 
     """
-    df = pd.read_csv(f, sep=r"\s*", engine='python', index_col='WaveL')
+    df = pd.read_csv(f, delim_whitespace=True, engine='python', index_col='WaveL')
     return df
 
 
@@ -163,5 +163,5 @@ def read_cdsstr(f):
     :returns: pandas dataframe
 
     """
-    df = pd.read_csv(f, sep=r"\s*", engine='python', index_col='WaveL')
+    df = pd.read_csv(f, delim_whitespace=True, engine='python', index_col='WaveL')
     return df

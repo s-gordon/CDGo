@@ -211,7 +211,7 @@ def single_line_scatter(datafile,
 
     df = pd.read_csv(datafile,
                      skipinitialspace=True,
-                     sep=r"\s*",
+                     delim_whitespace=True,
                      engine='python')
 
     # Invert data vertically to compensate for CDPro output
