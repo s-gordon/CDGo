@@ -1,8 +1,6 @@
-argparse
 numpy
 matplotlib
 pandas
-more_itertools
-seaborn
+more-itertools
 tabulate
-PyQt5
+pyqt>=5.6.0
