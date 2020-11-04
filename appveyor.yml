@@ -1,0 +1,18 @@
+version: '{branch}--{build}'
+
+environment:
+
+  matrix:
+    PYTHON_VERSION: '3.8'
+    PYTHON_ARCH: '64'
+
+
+install:
+  # check that the correct python version is being used
+  - "python --version"
+
+  # enforce the latest version of pip
+  - "python -m pip install --upgrade pip"
+
+  # install build dependencies
+  - "pip install -r requirements.txt"

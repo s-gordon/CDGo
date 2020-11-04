@@ -17,7 +17,6 @@ from multiprocessing import Pool
 import matplotlib.pyplot as plt
 import more_itertools
 import pandas as pd
-import seaborn as sns
 from tabulate import tabulate
 
 from .init_logging import logfile
@@ -416,13 +415,6 @@ def replace_input(input, output, ibasis):
             o.write(line)
 
 
-def set_style():
-    """
-    Set the global style for seaborn plots
-    """
-    sns.set(style="darkgrid")
-
-
 def run(ps,
         bs,
         cdpro_install_path,
@@ -527,8 +519,6 @@ def run(ps,
             logger.info('ibasis %s', ibasis)
 
     os.chdir(odir)
-
-    set_style()
 
     # assign column headings
     ss_assign.columns = ss_col_head

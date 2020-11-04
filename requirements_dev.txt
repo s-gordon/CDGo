@@ -1,0 +1,1 @@
+pyinstaller>=0.17
