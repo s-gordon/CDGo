@@ -8,7 +8,7 @@ environment:
       PYTHON_VERSION: "3.6"
       MINICONDA: C:\Miniconda36-x64
       PYTHON_ARCH: "64"
-      TARGET: x86_64-windows
+      TARGET: x86_64-windows-msvc
 
 build: off
 
@@ -31,7 +31,7 @@ install:
   - cmd: python --version
 
   # build
-  - cmd: pyinstaller --onefile --windowed -n cdgo_%TARGET%.exe cdgo/app.py
+  - cmd: pyinstaller --onefile --console --hidden-import="pandas" --hidden-import="matplotlib.pyplot" --hidden-import="numpy" -n cdgo_%TARGET%.exe cdgo/app.py
 
 artifacts:
   - path: 'dist\cdgo*exe'
