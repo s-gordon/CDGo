@@ -3,16 +3,36 @@ version: '{branch}--{build}'
 environment:
 
   matrix:
-    PYTHON_VERSION: '3.8'
-    PYTHON_ARCH: '64'
+    # windows python 3.6
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      PYTHON_VERSION: "3.6"
+      MINICONDA: C:\Miniconda36-x64
+      PYTHON_ARCH: "64"
+      TARGET: x86_64-windows
 
+build: off
+
+init:
+  - cmd: "ECHO %PYTHON_VERSION% %MINICONDA%"
 
 install:
+
+  - SET PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
+  - ECHO %PYTHON% %PYTHON_VERSION% %PYTHON_ARCH% %PATH%
+
+  - cmd: conda config --set always_yes yes
+  - cmd: conda update -q conda
+  - cmd: conda info -a
+  - cmd: "conda create -q -n test-environment python=%PYTHON_VERSION% pyinstaller"
+  - cmd: activate test-environment
+  - cmd: conda install n test-environment --file requirements.txt
+
   # check that the correct python version is being used
-  - "python --version"
+  - cmd: python --version
 
-  # enforce the latest version of pip
-  - "python -m pip install --upgrade pip"
+  # build
+  - cmd: pyinstaller --onefile --windowed -n cdgo_%TARGET%.exe cdgo/app.py
 
-  # install build dependencies
-  - "pip install -r requirements.txt"
+artifacts:
+  - path: 'dist\cdgo*exe'
+    name: cdgo
