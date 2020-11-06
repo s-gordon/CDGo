@@ -2,9 +2,9 @@
 include AUTHORS.rst
 
 include CONTRIBUTING.rst
-include HISTORY.rst
+include HISTORY.markdown
 include LICENSE
-include README.rst
+include README.markdown
 
 recursive-include tests *
 recursive-exclude * __pycache__
