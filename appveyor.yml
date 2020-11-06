@@ -9,7 +9,7 @@ environment:
       MINICONDA: C:\Miniconda36-x64
       PYTHON_ARCH: "64"
       TARGET: x86_64-windows-msvc
-      TOXENV: "py36'
+      TOXENV: "py36"
 
 build: off
 
