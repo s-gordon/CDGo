@@ -15,18 +15,6 @@ def residuals(fit, obs):
     return fit - obs
 
 
-def fit_stats(obs, fit):
-    """
-    https://stackoverflow.com/questions/19189362/getting-the-r-squared-
-    value-using-curve-fit
-    """
-    resid = fit - obs
-    ss_res = np.sum(resid**2)
-    ss_tot = np.sum((obs - np.mean(obs))**2)
-    r_squared = 1 - (ss_res / ss_tot)
-    return r_squared, ss_tot, ss_res, resid
-
-
 def sum_squares_total(obs):
     """
     https://stackoverflow.com/questions/19189362/getting-the-r-squared-
