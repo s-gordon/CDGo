@@ -9,6 +9,7 @@ environment:
       MINICONDA: C:\Miniconda36-x64
       PYTHON_ARCH: "64"
       TARGET: x86_64-windows-msvc
+      TOXENV: "py36'
 
 build: off
 
@@ -26,6 +27,7 @@ install:
   - cmd: "conda create -q -n test-environment python=%PYTHON_VERSION% pyinstaller"
   - cmd: activate test-environment
   - cmd: conda install -n test-environment --file requirements.txt
+  - cmd: conda install -n test-environment tox
 
   # check that the correct python version is being used
   - cmd: python --version
@@ -36,3 +38,6 @@ install:
 artifacts:
   - path: 'dist\cdgo*exe'
     name: cdgo
+
+test_script:
+  - tox
