@@ -487,11 +487,6 @@ def run(ps,
             ibasis_range=[i for i in db],
             CONTINLL=continll,
             CDSSTR=cdsstr)
-    # try:
-    #     shutil.copy("input", "{}/input".format(cdpro_install_path))
-    # except shutil.SameFileError:
-    #     logger.warning("CDPro input and destination input are identical")
-    #     logger.warning("Continuing.")
 
     ss_col_head = [
         'ibasis', 'alg', 'ahelix', 'bstrand', 'turn', 'unord', 'rmsd',
