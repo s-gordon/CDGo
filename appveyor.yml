@@ -10,6 +10,7 @@ environment:
       PYTHON_ARCH: "64"
       TARGET: x86_64-windows-msvc
       TOXENV: "py36"
+      DEPLOY: true
 
 build: off
 
@@ -24,7 +25,7 @@ install:
   - cmd: conda config --set always_yes yes
   - cmd: conda update -q conda
   - cmd: conda info -a
-  - cmd: "conda create -q -n test-environment python=%PYTHON_VERSION% pyinstaller"
+  - cmd: "conda create -q -n test-environment python=%PYTHON_VERSION%"
   - cmd: activate test-environment
   - cmd: conda install -n test-environment --file requirements.txt
   - cmd: conda install -n test-environment -c conda-forge tox-conda
@@ -33,11 +34,19 @@ install:
   - cmd: python --version
 
   # build
-  - cmd: pyinstaller --onefile --console --hidden-import="pandas" --hidden-import="matplotlib.pyplot" --hidden-import="numpy" -n cdgo_%TARGET%.exe cdgo/app.py
-
-artifacts:
-  - path: 'dist\cdgo*exe'
-    name: cdgo
+  - cmd: pip install .
 
 test_script:
-  - tox
+  - tox -v
+
+after_build:
+  # build binary for distribution
+  - if defined DEPLOY conda install -n test-environment pyinstaller
+  - if defined DEPLOY pyinstaller --onedir --console --hidden-import="pandas" --hidden-import="matplotlib.pyplot" --hidden-import="numpy" -n cdgo_%TARGET% cdgo/app.py
+  - if defined DEPLOY 7z a .\cdgo_%TARGET%.zip .\dist\cdgo_x86_64-windows-msvc\*
+
+artifacts:
+  - path: \cdgo_%TARGET%.zip
+    name: cdgo
+
+deploy: off
