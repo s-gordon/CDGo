@@ -12,8 +12,6 @@ environment:
       TOXENV: "py36"
       DEPLOY: true
 
-build: off
-
 init:
   - cmd: "ECHO %PYTHON_VERSION% %MINICONDA%"
 
@@ -33,6 +31,7 @@ install:
   # check that the correct python version is being used
   - cmd: python --version
 
+build_script:
   # build
   - cmd: pip install .
 
@@ -46,7 +45,7 @@ after_build:
   - if defined DEPLOY 7z a .\cdgo_%TARGET%.zip .\dist\cdgo_x86_64-windows-msvc\*
 
 artifacts:
-  - path: \cdgo_%TARGET%.zip
+  - path: .\cdgo_%TARGET%.zip
     name: cdgo
 
 deploy: off
