@@ -42,7 +42,7 @@ init:
 
 install:
 
-  - SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
+  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
   - ECHO %PYTHON% %PYTHON_VERSION% %PYTHON_ARCH% %PATH%
 
   # check that the correct python version is being used
