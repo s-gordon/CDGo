@@ -12,6 +12,24 @@ environment:
       TOXENV: "py36"
       DEPLOY: true
 
+    # windows python 3.7
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      PYTHON_VERSION: "3.7"
+      MINICONDA: C:\Miniconda37-x64
+      PYTHON_ARCH: "64"
+      TARGET: x86_64-windows-msvc
+      TOXENV: "py37"
+      DEPLOY: false
+
+    # windows python 3.8
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      PYTHON_VERSION: "3.8"
+      MINICONDA: C:\Miniconda37-x64
+      PYTHON_ARCH: "64"
+      TARGET: x86_64-windows-msvc
+      TOXENV: "py38"
+      DEPLOY: false
+
 init:
   - cmd: "ECHO %PYTHON_VERSION% %MINICONDA%"
 
