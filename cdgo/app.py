@@ -1,324 +1,191 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+
 
 import logging
-import signal
 import sys
+from tkinter import (END, NSEW, BooleanVar, Button, Checkbutton, DoubleVar, E,
+                     IntVar, Label, Tk, W, filedialog, scrolledtext, ttk)
 
 from cdgo.core import check_cdpro_install, print_citation_info, run
-from PyQt5 import QtCore, QtGui, QtWidgets
 
 
-def sigintHandler(*args):
-    """Handler for SIGINT"""
-    sys.stderr.write("\r")
-    QtWidgets.QApplication.quit()
+class Spinbox(ttk.Entry):
+
+    def __init__(self, master=None, **kw):
+        ttk.Entry.__init__(self, master, "ttk::spinbox", **kw)
+
+    def set(self, value):
+        self.tk.call(self._w, "set", value)
 
 
-class QPlainTextEditLogger(logging.Handler):
-    def __init__(self, parent):
-        super().__init__()
-        self.widget = QtWidgets.QPlainTextEdit(parent)
-        monofont = QtGui.QFont("monospace", 8)
-        self.widget.setFont(monofont)
-        self.widget.setGeometry(QtCore.QRect(460, 60, 200, 400))
-        self.widget.setReadOnly(True)
+class TextHandler(logging.Handler):
+    # This class allows you to log to a Tkinter Text or ScrolledText widget
+    # Adapted from Moshe Kaplan: https://gist.github.com/moshekaplan/c425f861de7bbf28ef06
+
+    def __init__(self, text):
+        # run the regular Handler __init__
+        logging.Handler.__init__(self)
+        # Store a reference to the Text it will log to
+        self.text = text
 
     def emit(self, record):
         msg = self.format(record)
-        self.widget.appendPlainText(msg)
+        def append():
+            self.text.configure(state='normal')
+            self.text.insert(END, msg + '\n')
+            self.text.configure(state='disabled')
+            # Autoscroll to the bottom
+            self.text.yview(END)
+        # This is necessary because we can't modify the Text from other threads
+        self.text.after(0, append)
 
 
-class Ui_MainWindow(QtWidgets.QDialog, QtWidgets.QPlainTextEdit):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        layout = QtWidgets.QVBoxLayout(self)
-        self.layout = layout
-        logging.getLogger().setLevel(logging.INFO)
-        self.proteinSpectrumFileName = None
-        self.bufferSpectrumFileName = None
-        self.continllOption = False
-        self.cdsstrOption = False
-        self.parallelOption = False
+class TkGUI():
+
+    """Docstring for TkGUI. """
+
+    def __init__(self, master, ypad=5, xpad=5):
+        """TODO: to be defined.
+
+        :master: TODO
+
+        """
+        master.title("CDGo")
+        self._master = master
+        self._master.maxsize(1500, 1000)
+        self._master.minsize(1000, 700)
+        self.ypad = ypad
+        self.xpad = xpad
+
+    def build(self):
+        ibasis_options = [
+            "1-5 (soluble proteins)",
+            "6-7 (soluble and denatured proteins)",
+            "8 (tertiary class specific)",
+            "9-10 (soluble and membrane proteins)",
+            "1-10 (all)"
+        ]
+        self.ibasis_options = ibasis_options
+
+        # Add text widget to display logging info
+        self.st = scrolledtext.ScrolledText(self._master, state='disabled')
+        self.st.configure(font='TkFixedFont')
+        self.st.grid(column=3, row=1, rowspan=20, sticky=NSEW)
+
+        # Create textLogger
+        text_handler = TextHandler(self.st)
+        logger = logging.getLogger()
+        logger.setLevel(logging.INFO)
+        logger.addHandler(text_handler)
+
+        # default values
+        def_protein_conc = 0.1
+        def_nresidues = 300
+        def_mw = 3e5
+        def_pathlength = 0.1
+
+        self.cdproPathInstructLabel = Label(self._master, text="Select path to CDPro:")
+        self.cdproPathInstructButton = Button(self._master, text="Browse", command=self.fileDialogSetCDProPath)
+        self.cdproPathChosenLabel = Label(self._master, text="", wraplength=300)
+        self.cdproPathInstructLabel.grid(column=1, row=1, sticky=W, pady=self.ypad, padx=self.xpad)
+        self.cdproPathInstructButton.grid(column=2, row=1, sticky=W, pady=self.ypad, padx=self.xpad)
+        self.cdproPathChosenLabel.grid(column=1, row=2, sticky=W, pady=self.ypad, padx=self.xpad)
+
+        self.proteinSpectrumFileNameLabel = Label(self._master, text="Select protein spectrum file:")
+        self.proteinSpectrumFileNameButton = Button(self._master, text="Browse", command=self.fileDialogProteinSpectrumFile)
+        self.proteinSpectrumFileNameChosenLabel = Label(self._master, text="", wraplength=300)
+        self.proteinSpectrumFileNameLabel.grid(column=1, row=3, sticky=W, pady=self.ypad, padx=self.xpad)
+        self.proteinSpectrumFileNameButton.grid(column=2, row=3, sticky=W, pady=self.ypad, padx=self.xpad)
+        self.proteinSpectrumFileNameChosenLabel.grid(column=1, row=4, sticky=W, pady=self.ypad, padx=self.xpad)
+
+        self.bufferSpectrumFileNameLabel = Label(self._master, text="Select buffer spectrum file:")
+        self.bufferSpectrumFileNameButton = Button(self._master, text="Browse", command=self.fileDialogBufferSpectrumFile)
+        self.bufferSpectrumFileNameChosenLabel = Label(self._master, text="", wraplength=300)
+        self.bufferSpectrumFileNameLabel.grid(column=1, row=5, sticky=W, pady=self.ypad, padx=self.xpad)
+        self.bufferSpectrumFileNameButton.grid(column=2, row=5, sticky=W, pady=self.ypad, padx=self.xpad)
+        self.bufferSpectrumFileNameChosenLabel.grid(column=1, row=6, sticky=W, pady=self.ypad, padx=self.xpad)
+
+        self.proteinconc = DoubleVar()
+        # initialize with sensible default value
+        self.proteinconc.set(def_protein_conc)
+        self.proteinConcLabel = Label(self._master, text="Protein concentration (g/L):")
+        self.proteinConcSpinBox = Spinbox(self._master, width=10)
+        self.proteinConcSpinBox.config(from_=0.01, to=10, format="%.2f", textvariable=self.proteinconc, increment=0.01)
+        self.proteinConcLabel.grid(column=1, row=7, sticky=W, pady=self.ypad, padx=self.xpad)
+        self.proteinConcSpinBox.grid(column=2, row=7, sticky=W, pady=self.ypad, padx=self.xpad)
+
+        self.nresidues = IntVar()
+        self.nresidues.set(def_nresidues)
+        self.spinBoxNumberResiduesLabel = Label(self._master, text="Number of residues:")
+        self.spinBoxNumberResidues = Spinbox(self._master, width=10)
+        self.spinBoxNumberResidues.config(from_=1, to=1000, textvariable=self.nresidues, increment=1)
+        self.spinBoxNumberResidues.grid(column=2, row=8, sticky=W, pady=self.ypad, padx=self.xpad)
+        self.spinBoxNumberResiduesLabel.grid(column=1, row=8, sticky=W, pady=self.ypad, padx=self.xpad)
+
+        self.proteinmw = DoubleVar()
+        self.proteinmw.set(def_mw)
+        self.spinBoxProteinMWLabel = Label(self._master, text="Molecular weight (Da):")
+        self.spinBoxProteinMW = Spinbox(self._master, width=10)
+        self.spinBoxProteinMW.config(from_=1, to=100000, increment=1, textvariable=self.proteinmw)
+        self.spinBoxProteinMWLabel.grid(column=1, row=10, sticky=W, pady=self.ypad, padx=self.xpad)
+        self.spinBoxProteinMW.grid(column=2, row=10, sticky=W, pady=self.ypad, padx=self.xpad)
+
+        self.pathlength = DoubleVar()
+        self.pathlength.set(def_pathlength)
+        self.spinBoxPathlengthLabel = Label(self._master, text="Cuvette pathlength (cm):")
+        self.spinBoxPathlength = Spinbox(self._master, width=10)
+        self.spinBoxPathlength.config(from_=0.1, to=1, increment=0.1, textvariable=self.pathlength)
+        self.spinBoxPathlengthLabel.grid(column=1, row=11, sticky=W, pady=self.ypad, padx=self.xpad)
+        self.spinBoxPathlength.grid(column=2, row=11, sticky=W, pady=self.ypad, padx=self.xpad)
+
+        self.comboBoxIbasisLabel = Label(self._master, text="Protein iBasis set:")
+        self.comboBoxIbasis = ttk.Combobox(self._master, width=36, state='readonly')
+        self.comboBoxIbasis['values'] = self.ibasis_options
+        self.comboBoxIbasis.bind('<<ComboboxSelected>>', self.ibasisFieldChange)
+        self.comboBoxIbasis.current(0)
         self.dbRange = range(1, 6)
+        self.comboBoxIbasisLabel.grid(column=1, row=12, sticky=W, pady=self.ypad, padx=self.xpad)
+        self.comboBoxIbasis.grid(column=2, row=12, sticky=W, pady=self.ypad, padx=self.xpad)
 
-    def setupUi(self, MainWindow):
+        self.continll_switch = BooleanVar()
+        self.cdsstr_switch = BooleanVar()
+        self.continll_switch.set(False)
+        self.cdsstr_switch.set(False)
+        self.CONTINLLCheckButton = Checkbutton(self._master, text=" CONTINLL", variable=self.continll_switch, command=self.clickContinllCheckBox)
+        self.CDSSTRCheckButton = Checkbutton(self._master, text=" CDSSTR", variable=self.cdsstr_switch, command=self.clickCdsstrCheckBox)
+        self.CONTINLLCheckButton.grid(column=1, row=13, sticky=W, pady=self.ypad, padx=self.xpad)
+        self.CDSSTRCheckButton.grid(column=2, row=13, sticky=W, pady=self.ypad, padx=self.xpad)
 
-        MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1200, 600)
-        logTextBox = QPlainTextEditLogger(MainWindow)
-        logging.getLogger().addHandler(logTextBox)
-        self.logTextBox = logTextBox
-        # self.logger = QPlainTextEditLogger(self)
-        self.layout.addWidget(self.logTextBox.widget)
-        self.setLayout(self.layout)
-        self.centralwidget = QtWidgets.QWidget(MainWindow)
-        self.centralwidget.setObjectName("centralwidget")
-        self.formLayoutWidget = QtWidgets.QWidget(self.centralwidget)
-        self.formLayoutWidget.setGeometry(QtCore.QRect(20, 20, 430, 411))
-        self.formLayoutWidget.setObjectName("formLayoutWidget")
-        self.formLayout = QtWidgets.QFormLayout(self.formLayoutWidget)
-        self.formLayout.setContentsMargins(0, 0, 0, 0)
-        self.formLayout.setObjectName("formLayout")
-        self.cdproPathInstructLabel = QtWidgets.QLabel(self.formLayoutWidget)
-        self.cdproPathInstructLabel.setObjectName("cdproPathInstructLabel")
-        self.formLayout.setWidget(0, QtWidgets.QFormLayout.LabelRole,
-                                  self.cdproPathInstructLabel)
-        self.cdproTextPath = QtWidgets.QLabel(self.formLayoutWidget)
-        self.cdproTextPath.setText("")
-        self.cdproTextPath.setWordWrap(True)
-        self.cdproTextPath.setObjectName("cdproTextPath")
-        self.formLayout.setWidget(0, QtWidgets.QFormLayout.FieldRole,
-                                  self.cdproTextPath)
-        self.pushButtonBrowseCDProPath = QtWidgets.QPushButton(
-            self.formLayoutWidget)
-        self.pushButtonBrowseCDProPath.setObjectName(
-            "pushButtonBrowseCDProPath")
-        self.formLayout.setWidget(1, QtWidgets.QFormLayout.LabelRole,
-                                  self.pushButtonBrowseCDProPath)
-        self.proteinSpectrumInstructLabel = QtWidgets.QLabel(
-            self.formLayoutWidget)
-        self.proteinSpectrumInstructLabel.setObjectName(
-            "proteinSpectrumInstructLabel")
-        self.formLayout.setWidget(2, QtWidgets.QFormLayout.LabelRole,
-                                  self.proteinSpectrumInstructLabel)
-        self.proteinSpectrumFileNameLabel = QtWidgets.QLabel(
-            self.formLayoutWidget)
-        self.proteinSpectrumFileNameLabel.setText("")
-        self.proteinSpectrumFileNameLabel.setWordWrap(True)
-        self.proteinSpectrumFileNameLabel.setObjectName(
-            "proteinSpectrumFileNameLabel")
-        self.formLayout.setWidget(2, QtWidgets.QFormLayout.FieldRole,
-                                  self.proteinSpectrumFileNameLabel)
-        self.pushButtonBrowseSampleFileName = QtWidgets.QPushButton(
-            self.formLayoutWidget)
-        self.pushButtonBrowseSampleFileName.setObjectName(
-            "pushButtonBrowseSampleFileName")
-        self.formLayout.setWidget(3, QtWidgets.QFormLayout.LabelRole,
-                                  self.pushButtonBrowseSampleFileName)
-        self.bufferSpectrumInstructLabel = QtWidgets.QLabel(
-            self.formLayoutWidget)
-        self.bufferSpectrumInstructLabel.setObjectName(
-            "bufferSpectrumInstructLabel")
-        self.formLayout.setWidget(4, QtWidgets.QFormLayout.LabelRole,
-                                  self.bufferSpectrumInstructLabel)
-        self.bufferSpectrumFileNameLabel = QtWidgets.QLabel(
-            self.formLayoutWidget)
-        self.bufferSpectrumFileNameLabel.setText("")
-        self.bufferSpectrumFileNameLabel.setWordWrap(True)
-        self.bufferSpectrumFileNameLabel.setObjectName(
-            "bufferSpectrumFileNameLabel")
-        self.formLayout.setWidget(4, QtWidgets.QFormLayout.FieldRole,
-                                  self.bufferSpectrumFileNameLabel)
-        self.pushButtonBrowseBufFileName = QtWidgets.QPushButton(
-            self.formLayoutWidget)
-        self.pushButtonBrowseBufFileName.setObjectName(
-            "pushButtonBrowseBufFileName")
-        self.formLayout.setWidget(5, QtWidgets.QFormLayout.LabelRole,
-                                  self.pushButtonBrowseBufFileName)
-        self.proteinConcInstruction = QtWidgets.QLabel(self.formLayoutWidget)
-        self.proteinConcInstruction.setObjectName("proteinConcInstruction")
-        self.formLayout.setWidget(6, QtWidgets.QFormLayout.LabelRole,
-                                  self.proteinConcInstruction)
-        self.proteinConcSpinBox = QtWidgets.QDoubleSpinBox(
-            self.formLayoutWidget)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum,
-                                           QtWidgets.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(20)
-        sizePolicy.setHeightForWidth(
-            self.proteinConcSpinBox.sizePolicy().hasHeightForWidth())
-        self.proteinConcSpinBox.setSizePolicy(sizePolicy)
-        self.proteinConcSpinBox.setDecimals(3)
-        self.proteinConcSpinBox.setMaximum(10.0)
-        self.proteinConcSpinBox.setSingleStep(0.01)
-        self.proteinConcSpinBox.setProperty("value", 0.1)
-        self.proteinConcSpinBox.setObjectName("proteinConcSpinBox")
-        self.formLayout.setWidget(6, QtWidgets.QFormLayout.FieldRole,
-                                  self.proteinConcSpinBox)
-        self.numberResInstructLabel = QtWidgets.QLabel(self.formLayoutWidget)
-        self.numberResInstructLabel.setObjectName("numberResInstructLabel")
-        self.formLayout.setWidget(7, QtWidgets.QFormLayout.LabelRole,
-                                  self.numberResInstructLabel)
-        self.spinBoxNumberResidues = QtWidgets.QSpinBox(self.formLayoutWidget)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum,
-                                           QtWidgets.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(20)
-        sizePolicy.setHeightForWidth(
-            self.spinBoxNumberResidues.sizePolicy().hasHeightForWidth())
-        self.spinBoxNumberResidues.setSizePolicy(sizePolicy)
-        self.spinBoxNumberResidues.setMaximum(1000)
-        self.spinBoxNumberResidues.setMinimum(2)
-        self.spinBoxNumberResidues.setProperty("value", 100.0)
-        self.spinBoxNumberResidues.setObjectName("spinBoxNumberResidues")
-        self.formLayout.setWidget(7, QtWidgets.QFormLayout.FieldRole,
-                                  self.spinBoxNumberResidues)
-        self.MWInstruct = QtWidgets.QLabel(self.formLayoutWidget)
-        self.MWInstruct.setObjectName("MWInstruct")
-        self.formLayout.setWidget(8, QtWidgets.QFormLayout.LabelRole,
-                                  self.MWInstruct)
-        self.doubleSpinBoxProteinMW = QtWidgets.QDoubleSpinBox(
-            self.formLayoutWidget)
-        self.doubleSpinBoxProteinMW.setDecimals(1)
-        self.doubleSpinBoxProteinMW.setMaximum(999999.0)
-        self.doubleSpinBoxProteinMW.setProperty("value", 14000.0)
-        self.doubleSpinBoxProteinMW.setObjectName("doubleSpinBoxProteinMW")
-        self.formLayout.setWidget(8, QtWidgets.QFormLayout.FieldRole,
-                                  self.doubleSpinBoxProteinMW)
-        self.pathlengthInstruct = QtWidgets.QLabel(self.formLayoutWidget)
-        self.pathlengthInstruct.setObjectName("pathlengthInstruct")
-        self.formLayout.setWidget(9, QtWidgets.QFormLayout.LabelRole,
-                                  self.pathlengthInstruct)
-        self.doubleSpinBoxPathlength = QtWidgets.QDoubleSpinBox(
-            self.formLayoutWidget)
-        self.doubleSpinBoxPathlength.setDecimals(2)
-        self.doubleSpinBoxPathlength.setMaximum(10)
-        self.doubleSpinBoxPathlength.setMinimum(0.01)
-        self.doubleSpinBoxPathlength.setProperty("value", 0.1)
-        self.doubleSpinBoxPathlength.setObjectName("doubleSpinBoxPathlength")
-        self.formLayout.setWidget(9, QtWidgets.QFormLayout.FieldRole,
-                                  self.doubleSpinBoxPathlength)
-        self.proteinIbasisInstruct = QtWidgets.QLabel(self.formLayoutWidget)
-        self.proteinIbasisInstruct.setObjectName("proteinIbasisInstruct")
-        self.formLayout.setWidget(10, QtWidgets.QFormLayout.LabelRole,
-                                  self.proteinIbasisInstruct)
-        self.comboBoxIbasis = QtWidgets.QComboBox(self.formLayoutWidget)
-        self.comboBoxIbasis.setObjectName("comboBoxIbasis")
-        self.comboBoxIbasis.addItem("")
-        self.comboBoxIbasis.addItem("")
-        self.comboBoxIbasis.addItem("")
-        self.comboBoxIbasis.addItem("")
-        self.comboBoxIbasis.addItem("")
-        self.formLayout.setWidget(10, QtWidgets.QFormLayout.FieldRole,
-                                  self.comboBoxIbasis)
-        self.checkBoxCONTINLL = QtWidgets.QCheckBox(self.formLayoutWidget)
-        self.checkBoxCONTINLL.setObjectName("checkBoxCONTINLL")
-        self.formLayout.setWidget(11, QtWidgets.QFormLayout.LabelRole,
-                                  self.checkBoxCONTINLL)
-        self.checkBoxCDsstr = QtWidgets.QCheckBox(self.formLayoutWidget)
-        self.checkBoxCDsstr.setObjectName("checkBoxCDsstr")
-        self.formLayout.setWidget(12, QtWidgets.QFormLayout.LabelRole,
-                                  self.checkBoxCDsstr)
-        self.checkBoxParallel = QtWidgets.QCheckBox(self.formLayoutWidget)
-        self.checkBoxParallel.setObjectName("checkBoxParallel")
-        self.formLayout.setWidget(13, QtWidgets.QFormLayout.LabelRole,
-                                  self.checkBoxParallel)
+        self.parallel_switch = BooleanVar()
+        self.parallel_switch.set(False)
+        self.parallelCheckButton = Checkbutton(
+            self._master, text="Run in parallel?",
+            variable=self.parallel_switch,
+            command=self.clickParallelCheckBox)
+        self.parallelCheckButton.grid(column=1, row=14, sticky=W, pady=self.ypad, padx=self.xpad)
 
-        self.checkBoxCONTINLL.setToolTip("Toggle CONTINLL function.")
-        self.checkBoxCDsstr.setToolTip("Toggle CDsstr function.")
-        self.checkBoxParallel.setToolTip(
-            "Run each combination of continll/cdsstr and ibasis \n" +
-            "concurrently on multiple cores. Defaults to available CPU cores.")
-        self.doubleSpinBoxPathlength.setToolTip(
-            "Select the pathlength of the cuvette used to collect data.\n" +
-            "Common values include 1, 0.1, and 0.05 cm.")
-        self.comboBoxIbasis.setToolTip(
-            "Select subset of ibases to compare against.\n" +
-            "Best to select sets that are appropriate to your protein of\n" +
-            "interest, or all.")
-        self.pushButtonBrowseSampleFileName.setToolTip(
-            "Select protein spectrum file as input to CDGo. This must be\n" +
-            "Aviv Model 420 format, as generated by the instrument.\n" +
-            "Multi-scan files are supported.")
-        self.pushButtonBrowseBufFileName.setToolTip(
-            "Select buffer spectrum file as input to CDGo. This is used to\n" +
-            "subtract absorbance of non-protein components from the\n" +
-            "protein spectrum. This must be Aviv Model 420 format, as\n" +
-            "generated by the instrument. Multi-scan files are supported.")
-        self.pushButtonBrowseCDProPath.setToolTip(
-            "Select path to CDPro installation.")
-
-        self.scrollArea = QtWidgets.QScrollArea(self.centralwidget)
-        self.scrollArea.setGeometry(QtCore.QRect(460, 60, 711, 381))
-        self.scrollArea.setWidgetResizable(True)
-        self.scrollArea.setObjectName("scrollArea")
-        self.scrollAreaWidgetContents = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 307, 377))
-        self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
-        self.scrollArea.setWidget(self.logTextBox.widget)
-        self.buttonBox = QtWidgets.QDialogButtonBox(self.centralwidget)
-        self.buttonBox.setGeometry(QtCore.QRect(20, 480, 174, 34))
-        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel
-                                          | QtWidgets.QDialogButtonBox.Ok)
-        self.buttonBox.setObjectName("buttonBox")
-
-        MainWindow.setCentralWidget(self.centralwidget)
-        self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 800, 30))
-        self.menubar.setObjectName("menubar")
-        MainWindow.setMenuBar(self.menubar)
-        self.statusbar = QtWidgets.QStatusBar(MainWindow)
-        self.statusbar.setObjectName("statusbar")
-        MainWindow.setStatusBar(self.statusbar)
-
-        self.retranslateUi(MainWindow)
-        QtCore.QMetaObject.connectSlotsByName(MainWindow)
-
-        self.pushButtonBrowseSampleFileName.clicked.connect(
-            self.setProteinSpectrumFile)
-        self.pushButtonBrowseBufFileName.clicked.connect(
-            self.setBufferSpectrumFile)
-        self.pushButtonBrowseCDProPath.clicked.connect(self.setCDProDirectory)
-
-        self.buttonBox.accepted.connect(self.accept)
-        self.buttonBox.rejected.connect(self.reject)
-
-        self.checkBoxCDsstr.stateChanged.connect(self.clickCdsstrCheckBox)
-        self.checkBoxCONTINLL.stateChanged.connect(self.clickContinllCheckBox)
-
-        self.checkBoxParallel.stateChanged.connect(self.clickParallelCheckBox)
-
-        self.comboBoxIbasis.currentIndexChanged.connect(
-            self.ibasisSelectionChange)
+        self.ok_button = Button(self._master, text="OK", command=self.accept)
+        self.ok_button.grid(column=1, row=15, sticky=W, padx=self.xpad, pady=self.ypad)
+        self.close_button = Button(self._master, text="Close", command=self.reject)
+        self.close_button.grid(column=1, row=15, sticky=E, padx=self.xpad, pady=self.ypad)
 
         logging.info(print_citation_info())
 
-    def retranslateUi(self, MainWindow):
-        _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
-        self.pushButtonBrowseSampleFileName.setText(
-            _translate("MainWindow", "Browse"))
-        self.pushButtonBrowseBufFileName.setText(
-            _translate("MainWindow", "Browse"))
-        self.proteinSpectrumInstructLabel.setText(
-            _translate("MainWindow",
-                       "Select your protein sample CD spectrum file (*.dat)"))
-        self.numberResInstructLabel.setText(
-            _translate("MainWindow", "Number of residues"))
-        self.bufferSpectrumInstructLabel.setText(
-            _translate("MainWindow",
-                       "Select your buffer CD spectrum file (*.dat)"))
-        self.MWInstruct.setText(
-            _translate("MainWindow", "Molecular Weight (Da)"))
-        self.doubleSpinBoxPathlength.setSuffix(_translate("MainWindow", " cm"))
-        self.pathlengthInstruct.setText(
-            _translate("MainWindow", "Cuvette pathlength (cm)"))
-        self.doubleSpinBoxProteinMW.setSuffix(_translate("MainWindow", " Da"))
-        self.checkBoxCONTINLL.setText(_translate("MainWindow", "CONTINLL"))
-        self.checkBoxCDsstr.setText(_translate("MainWindow", "CDSSTR"))
-        self.checkBoxParallel.setText(
-            _translate("MainWindow", "Run in parallel?"))
-        self.cdproPathInstructLabel.setText(
-            _translate("MainWindow", "Select path to CDPro"))
-        self.pushButtonBrowseCDProPath.setText(
-            _translate("MainWindow", "Browse"))
-        self.proteinConcInstruction.setText(
-            _translate("MainWindow", "Protein concentration (g/L)"))
-        self.proteinConcSpinBox.setSuffix(_translate("MainWindow", " g/L"))
-        self.comboBoxIbasis.setItemText(
-            0, _translate("MainWindow", "1-5 (soluble proteins)"))
-        self.comboBoxIbasis.setItemText(
-            1, _translate("MainWindow",
-                          "6-7 (soluble and denatured proteins)"))
-        self.comboBoxIbasis.setItemText(
-            2, _translate("MainWindow", "8 (tertiary class specific)"))
-        self.comboBoxIbasis.setItemText(
-            3, _translate("MainWindow",
-                          "9-10 (soluble and membrane proteins)"))
-        self.comboBoxIbasis.setItemText(4,
-                                        _translate("MainWindow", "1-10 (all)"))
-        self.proteinIbasisInstruct.setText(
-            _translate("MainWindow", "Protein iBasis set"))
+    def ibasisFieldChange(self, event):
+        ct = self.comboBoxIbasis.get()
+        logging.info("Ibasis range set to: {}".format(ct))
+        if ct == self.ibasis_options[0]:
+            self.dbRange = range(1, 6)
+        elif ct == self.ibasis_options[1]:
+            self.dbRange = range(6, 8)
+        elif ct == self.ibasis_options[2]:
+            self.dbRange = [8]
+        elif ct == self.ibasis_options[3]:
+            self.dbRange = range(9, 11)
+        elif ct == self.ibasis_options[4]:
+            self.dbRange = range(1, 11)
+        else:
+            logging.info(ct)
 
     def ibasisSelectionChange(self):
         ct = self.comboBoxIbasis.currentText()
@@ -336,99 +203,131 @@ class Ui_MainWindow(QtWidgets.QDialog, QtWidgets.QPlainTextEdit):
         else:
             logging.info(ct)
 
-    def accept(self):
-        if self.proteinSpectrumFileName is None:
-            logging.info("Protein spectrum file not set")
-        else:
-            logging.info("Running CDGo...")
-            self.run_cdgo()
 
-    def reject(self):
-        QtCore.QCoreApplication.instance().quit()
-
-    def setCDProDirectory(self):
-        dirName = QtWidgets.QFileDialog.getExistingDirectory(
-            None, "Browse for directory", ".")
-        if dirName:
-            self.cdproTextPath.setText(dirName)
-            self.cdproTextPathDir = dirName
-            logging.info(
-                "CDPro installation directory set to \"{}\"".format(dirName))
-            if check_cdpro_install(dirName) is True:
-                logging.info("CDPro installation found at {}".format(dirName))
+    def fileDialogSetCDProPath(self):
+        label = self.cdproPathChosenLabel
+        try:
+            dir = filedialog.askdirectory(
+                initialdir='',
+                title="Select path to CDPro installation.")
+            if check_cdpro_install(dir) is True:
+                logging.info("CDPro installation found at {}".format(dir))
+                logging.info("CDPro path set to \"{}\"".format(dir))
+                label.configure(text=dir)
+                self.cdproPath = dir
             else:
                 logging.info(
-                    "CDPro installation not found at {}".format(dirName))
+                    "CDPro installation not found at {}".format(dir))
+        except TypeError:
+            logging.info("Nothing selected.")
 
-    def setProteinSpectrumFile(self):
-        fileName, _ = QtWidgets.QFileDialog.getOpenFileName(
-            None, "Browse", "", "Aviv spectrum file (*.dat)")
-        if fileName:
-            self.proteinSpectrumFileNameLabel.setText(fileName)
-            logging.info(
-                "Protein sample spectrum set to \"{}\"".format(fileName))
-            self.proteinSpectrumFileName = fileName
 
-    def setBufferSpectrumFile(self):
-        fileName, _ = QtWidgets.QFileDialog.getOpenFileName(
-            None, "Browse", "", "Aviv spectrum file (*.dat)")
-        if fileName:
-            self.bufferSpectrumFileNameLabel.setText(fileName)
-            logging.info("Buffer spectrum set to \"{}\"".format(fileName))
-            self.bufferSpectrumFileName = fileName
+    def fileDialogProteinSpectrumFile(self):
+        label = self.proteinSpectrumFileNameChosenLabel
+        ftypes = [("Aviv spectrum files", "*.dat")]
+        try:
+            proteinSpectrumFileName = filedialog.askopenfilename(
+                initialdir='',
+                title="Select a spectrum file",
+                filetypes=ftypes)
+            if proteinSpectrumFileName:
+                label.configure(text=proteinSpectrumFileName)
+                logging.info("Protein spectrum set to \"{}\"".format(proteinSpectrumFileName))
+                self.proteinSpectrumFileName = proteinSpectrumFileName
+        except TypeError:
+            logging.info("Nothing selected.")
 
-    def clickContinllCheckBox(self, state):
-        if state == QtCore.Qt.Checked:
+
+    def fileDialogBufferSpectrumFile(self):
+        label = self.bufferSpectrumFileNameChosenLabel
+        ftypes = [("Aviv spectrum files", "*.dat")]
+        try:
+            bufferSpectrumFileName = filedialog.askopenfilename(
+                initialdir='',
+                title="Select a spectrum file",
+                filetypes=ftypes)
+            if bufferSpectrumFileName:
+                label.configure(text=bufferSpectrumFileName)
+                logging.info("Buffer spectrum set to \"{}\"".format(bufferSpectrumFileName))
+                self.bufferSpectrumFileName = bufferSpectrumFileName
+        except TypeError:
+            logging.info("Nothing selected.")
+
+
+    def clickContinllCheckBox(self):
+        logging.info(self.continll_switch.get())
+        if self.continll_switch.get() == True:
+            self.continll_switch.set(True)
             logging.info("CONTINLL enabled")
-            self.continllOption = True
         else:
+            self.continll_switch.set(False)
             logging.info("CONTINLL disabled")
-            self.continllOption = False
 
-    def clickCdsstrCheckBox(self, state):
-        if state == QtCore.Qt.Checked:
+
+    def clickCdsstrCheckBox(self):
+        if self.cdsstr_switch.get() == True:
+            self.cdsstr_switch.set(True)
             logging.info("CDSSTR enabled")
-            self.cdsstrOption = True
         else:
+            self.cdsstr_switch.set(False)
             logging.info("CDSSTR disabled")
-            self.cdsstrOption = False
 
-    def clickParallelCheckBox(self, state):
-        if state == QtCore.Qt.Checked:
+
+    def clickParallelCheckBox(self):
+        if self.parallel_switch.get() == True:
+            self.parallel_switch.set(True)
             logging.info("Parallel execution enabled")
-            self.parallelOption = True
         else:
+            self.parallel_switch.set(False)
             logging.info("Parallel execution disabled")
-            self.parallelOption = False
 
-    def run_cdgo(self):
-        cdpro = self.cdproTextPathDir
+
+    def accept(self):
+        if self.proteinSpectrumFileName is None:
+            logging.info("Protein spectrum file not set.")
+        else:
+            logging.info("Running CDGo...")
+            self.process()
+
+    def reject(self):
+        logging.info("Quitting")
+        self._master.quit()
+
+
+    def returnState(self, switch):
+        if switch.get() == 0:
+            return False
+        else:
+            return True
+
+
+    def process(self):
+        cdpro = self.cdproPath
         proteinSpecName = self.proteinSpectrumFileName
         bufferSpecName = self.bufferSpectrumFileName
-        mw = self.doubleSpinBoxProteinMW.value()
-        nres = self.spinBoxNumberResidues.value()
-        concentration = self.proteinConcSpinBox.value()
+        mw = self.proteinmw.get()
+        nres = self.nresidues.get()
+        concentration = self.proteinconc.get()
         dbRange = self.dbRange
-        pl = self.doubleSpinBoxPathlength.value()
-        continll = self.continllOption
-        cdsstr = self.cdsstrOption
-        parallel = self.parallelOption
+        pl = self.pathlength.get()
+        # check state of continll switch
+        continll = self.returnState(self.continll_switch)
+        cdsstr = self.returnState(self.cdsstr_switch)
+        parallel = self.returnState(self.parallel_switch)
         run(proteinSpecName, bufferSpecName, cdpro, mw, pl, nres,
             concentration, dbRange, continll, cdsstr, parallel)
 
 
 def main():
-    signal.signal(signal.SIGINT, sigintHandler)
-    app = QtWidgets.QApplication(sys.argv)
-    timer = QtCore.QTimer()
-    timer.start(500)
-    timer.timeout.connect(lambda: None)
-    MainWindow = QtWidgets.QMainWindow()
-    ui = Ui_MainWindow()
-    ui.setupUi(MainWindow)
-    ui.raise_()
-    MainWindow.show()
-    sys.exit(app.exec_())
+    root = Tk()
+    root.grid_columnconfigure(3, weight=1)
+    gui = TkGUI(root)
+    gui.build()
+    try:
+        root.mainloop()
+    except KeyboardInterrupt:
+        print("Exiting now.")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
