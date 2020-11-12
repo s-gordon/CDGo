@@ -43,7 +43,7 @@ init:
 install:
 
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
-  - ECHO %PYTHON% %PYTHON_VERSION% %PYTHON_ARCH% %PATH%
+  - "ECHO %PYTHON% %PYTHON_VERSION% %PYTHON_ARCH% %PATH%"
 
   # check that the correct python version is being used
   - cmd: python --version
@@ -52,20 +52,20 @@ install:
   - cmd: python -m pip install --upgrade pip
 
   # install dependencies
-  - cmd: %CMD_IN_ENV% pip install -r requirements.txt
+  - cmd: "%CMD_IN_ENV%" pip install -r requirements.txt
 
 build_script:
   # build
-  - cmd: %CMD_IN_ENV% pip install .
+  - cmd: "%CMD_IN_ENV%" pip install .
 
 test_script:
-  - %CMD_IN_ENV% python -m pip install tox
-  - %CMD_IN_ENV% tox -v
+  - "%CMD_IN_ENV%" python -m pip install tox
+  - "%CMD_IN_ENV%" tox -v
 
 after_test:
   # build binary for distribution
-  - if defined DEPLOY %CMD_IN_ENV% python -m pip install pyinstaller
-  - if defined DEPLOY pyinstaller --onedir --console --hidden-import="pandas" --hidden-import="matplotlib.pyplot" --hidden-import="numpy" -n cdgo_%TARGET% cdgo/app.py
+  - if defined DEPLOY "%CMD_IN_ENV%" python -m pip install pyinstaller
+  - if defined DEPLOY pyinstaller --onedir --console --hidden-import="pandas" --hidden-import="matplotlib.pyplot" --hidden-import="numpy" -n "cdgo_%TARGET%" cdgo/app.py
   - if defined DEPLOY 7z a .\cdgo_%TARGET%.zip .\dist\cdgo_%TARGET%\*
 
 artifacts:
