@@ -52,11 +52,11 @@ install:
   - cmd: python -m pip install --upgrade pip
 
   # install dependencies
-  - cmd: "%CMD_IN_ENV% python -m pip install -r requirements.txt"
+  - cmd: python -m pip install -r requirements.txt
 
 build_script:
   # build
-  - cmd: "%CMD_IN_ENV% python -m pip install ."
+  - cmd: python -m pip install .
 
 test_script:
   - "%CMD_IN_ENV% python -m pip install tox"
