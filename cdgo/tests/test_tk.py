@@ -23,9 +23,9 @@ def test_defaults(backend):
     assert backend.comboBoxIbasis.get() == backend.ibasis_options[0]
     assert backend.nresidues.get() == 300
     assert backend.proteinmw.get() == 3e5
-    assert backend.parallel_switch.get() == 0
-    assert backend.cdsstr_switch.get() == 0
-    assert backend.continll_switch.get() == 0
+    assert backend.parallel_switch.get() == False
+    assert backend.cdsstr_switch.get() == False
+    assert backend.continll_switch.get() == False
     assert backend.pathlength.get() == 0.1
 
 
@@ -43,11 +43,11 @@ def test_continll_checkbox_toggle(backend):
 
     # toggle to true
     backend.clickContinllCheckBox()
-    assert backend.continll_switch.get() == 1
+    assert backend.continll_switch.get() == True
 
     # toggle again to false
     backend.clickContinllCheckBox()
-    assert backend.continll_switch.get() == 0
+    assert backend.continll_switch.get() == False
 
 
 def test_cdsstr_checkbox_toggle(backend):
@@ -56,11 +56,11 @@ def test_cdsstr_checkbox_toggle(backend):
 
     # toggle to true
     backend.clickCdsstrCheckBox()
-    assert backend.cdsstr_switch.get() == 1
+    assert backend.cdsstr_switch.get() == True
 
     # toggle again to false
     backend.clickCdsstrCheckBox()
-    assert backend.cdsstr_switch.get() == 0
+    assert backend.cdsstr_switch.get() == False
 
 
 def test_parallel_checkbox_toggle(backend):
@@ -69,8 +69,8 @@ def test_parallel_checkbox_toggle(backend):
 
     # toggle to true
     backend.clickParallelCheckBox()
-    assert backend.parallel_switch.get() == 1
+    assert backend.parallel_switch.get() == True
 
     # toggle again to false
     backend.clickParallelCheckBox()
-    assert backend.parallel_switch.get() == 0
+    assert backend.parallel_switch.get() == False

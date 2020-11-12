@@ -257,28 +257,28 @@ class TkGUI():
     def clickContinllCheckBox(self):
         logging.info(self.continll_switch.get())
         if self.continll_switch.get() == True:
-            self.continll_switch.set(True)
+            self.continll_switch.set(False)
             logging.info("CONTINLL enabled")
         else:
-            self.continll_switch.set(False)
+            self.continll_switch.set(True)
             logging.info("CONTINLL disabled")
 
 
     def clickCdsstrCheckBox(self):
         if self.cdsstr_switch.get() == True:
-            self.cdsstr_switch.set(True)
+            self.cdsstr_switch.set(False)
             logging.info("CDSSTR enabled")
         else:
-            self.cdsstr_switch.set(False)
+            self.cdsstr_switch.set(True)
             logging.info("CDSSTR disabled")
 
 
     def clickParallelCheckBox(self):
         if self.parallel_switch.get() == True:
-            self.parallel_switch.set(True)
+            self.parallel_switch.set(False)
             logging.info("Parallel execution enabled")
         else:
-            self.parallel_switch.set(False)
+            self.parallel_switch.set(True)
             logging.info("Parallel execution disabled")
 
 
