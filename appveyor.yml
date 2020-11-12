@@ -2,11 +2,18 @@ version: '{branch}--{build}'
 
 environment:
 
+  global:
+    # SDK v7.0 MSVC Express 2008's SetEnv.cmd script will fail if the
+    # /E:ON and /V:ON options are not enabled in the batch script intepreter
+    # See: http://stackoverflow.com/a/13751649/163740
+    CMD_IN_ENV: "cmd /E:ON /V:ON /C .\\appveyor\\run_with_env.cmd"
+
+
   matrix:
     # windows python 3.6
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       PYTHON_VERSION: "3.6"
-      MINICONDA: C:\Miniconda36-x64
+      PYTHON: C:\\Python36-x64
       PYTHON_ARCH: "64"
       TARGET: x86_64-windows-msvc
       TOXENV: "py36"
@@ -15,7 +22,7 @@ environment:
     # windows python 3.7
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       PYTHON_VERSION: "3.7"
-      MINICONDA: C:\Miniconda37-x64
+      PYTHON: C:\\Python37-x64
       PYTHON_ARCH: "64"
       TARGET: x86_64-windows-msvc
       TOXENV: "py37"
@@ -24,41 +31,40 @@ environment:
     # windows python 3.8
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       PYTHON_VERSION: "3.8"
-      MINICONDA: C:\Miniconda37-x64
+      PYTHON: C:\\Python38-x64
       PYTHON_ARCH: "64"
       TARGET: x86_64-windows-msvc
       TOXENV: "py38"
       DEPLOY: false
 
 init:
-  - cmd: "ECHO %PYTHON_VERSION% %MINICONDA%"
+  - cmd: "ECHO %PYTHON_VERSION% %PYTHON%"
 
 install:
 
-  - SET PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
+  - SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
   - ECHO %PYTHON% %PYTHON_VERSION% %PYTHON_ARCH% %PATH%
-
-  - cmd: conda config --set always_yes yes
-  - cmd: conda update -q conda
-  - cmd: conda info -a
-  - cmd: "conda create -q -n test-environment python=%PYTHON_VERSION%"
-  - cmd: activate test-environment
-  - cmd: conda install -n test-environment --file requirements.txt
-  - cmd: conda install -n test-environment -c conda-forge tox-conda
 
   # check that the correct python version is being used
   - cmd: python --version
 
+  # enforce latest version of pip
+  - cmd: python -m pip install --upgrade pip
+
+  # install dependencies
+  - cmd: %CMD_IN_ENV% pip install -r requirements.txt
+
 build_script:
   # build
-  - cmd: pip install .
+  - cmd: %CMD_IN_ENV% pip install .
 
 test_script:
-  - tox -v
+  - %CMD_IN_ENV% python -m pip install tox
+  - %CMD_IN_ENV% tox -v
 
-after_build:
+after_test:
   # build binary for distribution
-  - if defined DEPLOY conda install -n test-environment pyinstaller
+  - if defined DEPLOY %CMD_IN_ENV% python -m pip install pyinstaller
   - if defined DEPLOY pyinstaller --onedir --console --hidden-import="pandas" --hidden-import="matplotlib.pyplot" --hidden-import="numpy" -n cdgo_%TARGET% cdgo/app.py
   - if defined DEPLOY 7z a .\cdgo_%TARGET%.zip .\dist\cdgo_%TARGET%\*
 
