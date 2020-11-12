@@ -3,7 +3,7 @@
 
 import logging
 import sys
-from tkinter import (END, NSEW, BooleanVar, Button, Checkbutton, DoubleVar, E,
+from tkinter import (END, NSEW, Button, Checkbutton, DoubleVar, E,
                      IntVar, Label, Tk, W, filedialog, scrolledtext, ttk)
 
 from cdgo.core import check_cdpro_install, print_citation_info, run
@@ -147,17 +147,17 @@ class TkGUI():
         self.comboBoxIbasisLabel.grid(column=1, row=12, sticky=W, pady=self.ypad, padx=self.xpad)
         self.comboBoxIbasis.grid(column=2, row=12, sticky=W, pady=self.ypad, padx=self.xpad)
 
-        self.continll_switch = BooleanVar()
-        self.cdsstr_switch = BooleanVar()
-        self.continll_switch.set(False)
-        self.cdsstr_switch.set(False)
+        self.continll_switch = IntVar()
+        self.cdsstr_switch = IntVar()
+        self.continll_switch.set(0)
+        self.cdsstr_switch.set(0)
         self.CONTINLLCheckButton = Checkbutton(self._master, text=" CONTINLL", variable=self.continll_switch, command=self.clickContinllCheckBox)
         self.CDSSTRCheckButton = Checkbutton(self._master, text=" CDSSTR", variable=self.cdsstr_switch, command=self.clickCdsstrCheckBox)
         self.CONTINLLCheckButton.grid(column=1, row=13, sticky=W, pady=self.ypad, padx=self.xpad)
         self.CDSSTRCheckButton.grid(column=2, row=13, sticky=W, pady=self.ypad, padx=self.xpad)
 
-        self.parallel_switch = BooleanVar()
-        self.parallel_switch.set(False)
+        self.parallel_switch = IntVar()
+        self.parallel_switch.set(0)
         self.parallelCheckButton = Checkbutton(
             self._master, text="Run in parallel?",
             variable=self.parallel_switch,
@@ -255,21 +255,21 @@ class TkGUI():
 
 
     def clickContinllCheckBox(self):
-        if self.continll_switch.get() == True:
+        if self.continll_switch.get() == 1:
             logging.info("CONTINLL enabled")
-        elif self.continll_switch.get() == False:
+        else:
             logging.info("CONTINLL disabled")
 
 
     def clickCdsstrCheckBox(self):
-        if self.cdsstr_switch.get() == True:
+        if self.cdsstr_switch.get() == 1:
             logging.info("CDSSTR enabled")
         else:
             logging.info("CDSSTR disabled")
 
 
     def clickParallelCheckBox(self):
-        if self.parallel_switch.get() == True:
+        if self.parallel_switch.get() == 1:
             logging.info("Parallel execution enabled")
         else:
             logging.info("Parallel execution disabled")

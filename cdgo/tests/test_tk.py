@@ -1,76 +1,99 @@
 #!/usr/bin/env python
 
-import pytest
-from cdgo import app
+
+import unittest
 from tkinter import Tk
 
-
-@pytest.fixture()
-def backend():
-    global _app
-    _app = Tk()
-    _app.grid_columnconfigure(3, weight=1)
-    gui = app.TkGUI(_app)
-    gui.build()
-    return gui
+from cdgo import app
 
 
-def test_defaults(backend):
-    """Test the GUI in the native state.
-    Check that defaults are as intended.
+class GUIWidgetUnitTests(unittest.TestCase):
 
-    """
-    assert backend.comboBoxIbasis.get() == backend.ibasis_options[0]
-    assert backend.nresidues.get() == 300
-    assert backend.proteinmw.get() == 3e5
-    assert backend.parallel_switch.get() == False
-    assert backend.cdsstr_switch.get() == False
-    assert backend.continll_switch.get() == False
-    assert backend.pathlength.get() == 0.1
+    """Docstring for GUIUnitTests(unittest.TestCase). """
+
+    def setUp(self):
+        global _app
+        _app = Tk()
+        _app.grid_columnconfigure(3, weight=1)
+        self.gui = app.TkGUI(_app)
+        self.gui.build()
+
+    def tearDown(self):
+        self.gui = None
+
+    def test_widget_defaults(self):
+        """
+        Test the GUI in the native state.
+        Check that defaults are as intended.
+        """
+        self.assertEqual(self.gui.comboBoxIbasis.get(), self.gui.ibasis_options[0])
+        self.assertEqual(self.gui.nresidues.get(), 300)
+        self.assertEqual(self.gui.proteinmw.get(), 3e5)
+        self.assertEqual(self.gui.parallel_switch.get(), 0)
+        self.assertEqual(self.gui.cdsstr_switch.get(), 0)
+        self.assertEqual(self.gui.continll_switch.get(), 0)
+        self.assertEqual(self.gui.pathlength.get(), 0.1)
+
+    def test_change_ibasis_combobox(self):
+        """
+        check that changing the ibasis selection updates the ibasis option
+        """
+        lsize = len(self.gui.ibasis_options)
+        for n in range(lsize):
+            self.gui.comboBoxIbasis.current(n)
+            self.assertEqual(self.gui.comboBoxIbasis.get(), self.gui.ibasis_options[n])
+
+    def test_continll_toggle(self):
+        """
+        Test changing the state of the CONTINLL checkbox widget.
+        """
+        # initialize as false for testing
+        self.gui.continll_switch.set(0)
+        self.gui.CONTINLLCheckButton.invoke()
+        self.assertEqual(self.gui.continll_switch.get(), 0)
+
+        # toggle to true
+        self.gui.continll_switch.set(1)
+        self.assertEqual(self.gui.continll_switch.get(), 1)
+
+        # toggle to false
+        self.gui.continll_switch.set(0)
+        self.assertEqual(self.gui.continll_switch.get(), 0)
+
+    def test_cdsstr_toggle(self):
+        """
+        Test changing the state of the CONTINLL checkbox widget.
+        """
+        # initialize as false for testing
+        self.gui.cdsstr_switch.set(0)
+        self.gui.CONTINLLCheckButton.invoke()
+        self.assertEqual(self.gui.cdsstr_switch.get(), 0)
+
+        # toggle to true
+        self.gui.cdsstr_switch.set(1)
+        self.assertEqual(self.gui.cdsstr_switch.get(), 1)
+
+        # toggle to false
+        self.gui.cdsstr_switch.set(0)
+        self.assertEqual(self.gui.cdsstr_switch.get(), 0)
+
+    def test_parallel_toggle(self):
+        """
+        Test changing the state of the CONTINLL checkbox widget.
+        """
+        # initialize as false for testing
+        self.gui.parallel_switch.set(0)
+        self.gui.CONTINLLCheckButton.invoke()
+        self.assertEqual(self.gui.parallel_switch.get(), 0)
+
+        # toggle to true
+        self.gui.parallel_switch.set(1)
+        self.assertEqual(self.gui.parallel_switch.get(), 1)
+
+        # toggle to false
+        self.gui.parallel_switch.set(0)
+        self.assertEqual(self.gui.parallel_switch.get(), 0)
 
 
-def test_change_ibasis_combobox(backend):
-    # check that changing the ibasis selection updates the ibasis option
-    lsize = len(backend.ibasis_options)
-    for n in range(lsize):
-        backend.comboBoxIbasis.current(n)
-        assert backend.comboBoxIbasis.get() == backend.ibasis_options[n]
-
-
-def test_continll_checkbox_toggle(backend):
-    # initialize as false for testing
-    backend.continll_switch.set(False)
-
-    # toggle to true
-    backend.clickContinllCheckBox()
-    assert backend.continll_switch.get() == True
-
-    # toggle again to false
-    backend.clickContinllCheckBox()
-    assert backend.continll_switch.get() == False
-
-
-def test_cdsstr_checkbox_toggle(backend):
-    # initialize as false for testing
-    backend.cdsstr_switch.set(False)
-
-    # toggle to true
-    backend.clickCdsstrCheckBox()
-    assert backend.cdsstr_switch.get() == True
-
-    # toggle again to false
-    backend.clickCdsstrCheckBox()
-    assert backend.cdsstr_switch.get() == False
-
-
-def test_parallel_checkbox_toggle(backend):
-    # initialize as false for testing
-    backend.parallel_switch.set(False)
-
-    # toggle to true
-    backend.clickParallelCheckBox()
-    assert backend.parallel_switch.get() == True
-
-    # toggle again to false
-    backend.clickParallelCheckBox()
-    assert backend.parallel_switch.get() == False
+if __name__ == "__main__":
+    unittest.main()
