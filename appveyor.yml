@@ -13,7 +13,7 @@ environment:
     # windows python 3.6
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       PYTHON_VERSION: "3.6"
-      PYTHON: C:\\Python36-x64
+      PYTHON: C:\Python36-x64
       PYTHON_ARCH: "64"
       TARGET: x86_64-windows-msvc
       TOXENV: "py36"
@@ -22,7 +22,7 @@ environment:
     # windows python 3.7
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       PYTHON_VERSION: "3.7"
-      PYTHON: C:\\Python37-x64
+      PYTHON: C:\Python37-x64
       PYTHON_ARCH: "64"
       TARGET: x86_64-windows-msvc
       TOXENV: "py37"
@@ -31,7 +31,7 @@ environment:
     # windows python 3.8
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       PYTHON_VERSION: "3.8"
-      PYTHON: C:\\Python38-x64
+      PYTHON: C:\Python38-x64
       PYTHON_ARCH: "64"
       TARGET: x86_64-windows-msvc
       TOXENV: "py38"
@@ -59,12 +59,12 @@ build_script:
   - cmd: python -m pip install .
 
 test_script:
-  - "%CMD_IN_ENV% python -m pip install tox"
-  - "%CMD_IN_ENV% tox -v"
+  - python -m pip install tox
+  - tox -v
 
 after_test:
   # build binary for distribution
-  - if defined DEPLOY "%CMD_IN_ENV% python -m pip install pyinstaller"
+  - if defined DEPLOY python -m pip install pyinstaller
   - if defined DEPLOY pyinstaller --onedir --console --hidden-import="pandas" --hidden-import="matplotlib.pyplot" --hidden-import="numpy" -n "cdgo_%TARGET%" cdgo/app.py
   - if defined DEPLOY 7z a .\cdgo_%TARGET%.zip .\dist\cdgo_%TARGET%\*
 
