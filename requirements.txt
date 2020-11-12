@@ -1,5 +1,5 @@
 numpy
-matplotlib==3.2.2
+matplotlib-base==3.2.2
 pandas
 more-itertools
 tabulate
