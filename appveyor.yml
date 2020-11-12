@@ -42,7 +42,7 @@ after_build:
   # build binary for distribution
   - if defined DEPLOY conda install -n test-environment pyinstaller
   - if defined DEPLOY pyinstaller --onedir --console --hidden-import="pandas" --hidden-import="matplotlib.pyplot" --hidden-import="numpy" -n cdgo_%TARGET% cdgo/app.py
-  - if defined DEPLOY 7z a .\cdgo_%TARGET%.zip .\dist\cdgo_x86_64-windows-msvc\*
+  - if defined DEPLOY 7z a .\cdgo_%TARGET%.zip .\dist\cdgo_%TARGET%\*
 
 artifacts:
   - path: .\cdgo_%TARGET%.zip
