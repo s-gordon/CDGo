@@ -1,1 +1,2 @@
-pyinstaller>=0.17
+pyinstaller>=0.17 ; python_version >= '3.0'
+pyinstaller==3.5 ; python_version < '3.0'
