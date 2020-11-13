@@ -544,8 +544,8 @@ def run(ps,
                                  yerr="std",
                                  label="exp",
                                  color="black")
-    ax.set_xlabel('Wavelength (nm)')
-    ax.set_ylabel('Δε ($M^{-1}·cm^{-1}$)')
+    ax.set_xlabel(u'Wavelength (nm)')
+    ax.set_ylabel(u'Δε ($M^{-1}·cm^{-1}$)')
     ax.legend()
     plt.savefig(outfile, bbox_inches='tight')
 
