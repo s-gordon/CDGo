@@ -7,7 +7,7 @@ import numpy as np
 from .init_logging import logger
 from .mathops import millidegrees_to_epsilon
 try:
-    from io import StringIO  # python2
+    from StringIO import StringIO  # python2
 except ImportError:
     from io import StringIO  # python3
 

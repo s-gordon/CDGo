@@ -3,8 +3,18 @@
 
 import logging
 import sys
-from tkinter import (END, NSEW, Button, Checkbutton, DoubleVar, E,
-                     IntVar, Label, Tk, W, filedialog, scrolledtext, ttk)
+
+try:
+    # python 3
+    from tkinter import (END, NSEW, Button, Checkbutton, DoubleVar, E, IntVar,
+                         Label, Tk, W, filedialog, scrolledtext, ttk)
+except ImportError:
+    # python 2
+    from Tkinter import (END, NSEW, Button, Checkbutton, DoubleVar, E, IntVar,
+                        Label, W, Tk)
+    import tkFileDialog as filedialog
+    import ScrolledText as scrolledtext
+    import ttk
 
 from cdgo.core import check_cdpro_install, print_citation_info, run
 

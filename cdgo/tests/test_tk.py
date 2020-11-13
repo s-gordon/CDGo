@@ -2,7 +2,10 @@
 
 
 import unittest
-from tkinter import Tk
+try:
+    from tkinter import Tk  # python3
+except ImportError:
+    from Tkinter import Tk  # python2
 
 from cdgo import app
 
