@@ -1,5 +1,7 @@
 numpy>=1.16.6
-matplotlib==3.2.2
+matplotlib==2.2.5 ; python_version < '3.0'
+matplotlib==3.2.2 ; python_version >= '3.0'
 pandas
 more-itertools
 tabulate
+argparse ; python_version<"2.7"
