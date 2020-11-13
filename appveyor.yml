@@ -11,8 +11,40 @@ environment:
     # See: http://stackoverflow.com/a/13751649/163740
     CMD_IN_ENV: "cmd /E:ON /V:ON /C .\\appveyor\\run_with_env.cmd"
 
-
   matrix:
+
+    # windows python 2.6 x64
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      PYTHON_VERSION: "2.6"
+      PYTHON: C:\Python26-x64
+      PYTHON_ARCH: "64"
+      TARGET: x64-windows-msvc
+      TOXENV: "py26"
+
+    # windows python 2.6 x86
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      PYTHON_VERSION: "2.6"
+      PYTHON: C:\Python26
+      PYTHON_ARCH: "32"
+      TARGET: x86-windows-msvc
+      TOXENV: "py26"
+
+    # windows python 2.7 x64
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      PYTHON_VERSION: "2.7"
+      PYTHON: C:\Python27-x64
+      PYTHON_ARCH: "64"
+      TARGET: x64-windows-msvc
+      TOXENV: "py27"
+
+    # windows python 2.7 x86
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      PYTHON_VERSION: "2.7"
+      PYTHON: C:\Python27
+      PYTHON_ARCH: "32"
+      TARGET: x86-windows-msvc
+      TOXENV: "py27"
+
     # windows python 3.6
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       PYTHON_VERSION: "3.6"
