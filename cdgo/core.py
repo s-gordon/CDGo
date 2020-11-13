@@ -14,6 +14,7 @@ import textwrap
 import time
 from datetime import datetime
 from multiprocessing import Pool
+from multiprocessing import cpu_count
 
 import matplotlib.pyplot as plt
 import more_itertools
@@ -499,7 +500,7 @@ def run(ps,
     # optionally, execute continll and cdsstr concurrently on multiple cores
     # faster execution on modern multicore machines
     if parallel_execution is True:
-        p = Pool(os.cpu_count())
+        p = Pool(cpu_count())
 
         cdpro_generator = ((cdpro_install_path, i, odir, continll, cdsstr,
                             head, body) for i in ibasis_list)
