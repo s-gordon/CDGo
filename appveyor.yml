@@ -74,7 +74,7 @@ install:
   - cmd: python -m pip install .
 
 before_build:
-  - cmd: python -m pip install pyinstaller
+  - cmd: python -m pip install -r requirements_dev.txt
 
 build_script:
   # build binary for distribution
