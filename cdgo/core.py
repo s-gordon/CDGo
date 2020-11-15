@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: iso-8859-15 -*-
+# -*- coding: utf-8 -*-
 
 import logging
 import ntpath
@@ -405,7 +405,7 @@ def replace_input(input, output, ibasis):
     """
     return: None
     """
-    pattern = '# PRINT(.*\n)\s+(\S+)(.*)'
+    pattern = r'# PRINT(.*\n)\s+(\S+)(.*)'
     replace = '# PRINT    IBasis\n      0         {}'.format(ibasis)
     f = open(input, 'r')
     lines = f.read()
